@@ -1,0 +1,81 @@
+# ============================================
+# SOYSMonthlyCard 主配置
+# 奖励内容见 rewards.yml，提示语见 message.yml
+# 修改后可用 /sgiftloft reload 重载
+# ============================================
+
+settings:
+  # 每月几号(含)之后可以领取月卡礼包，范围建议 1-28
+  claim-day: 1
+
+  # 玩家上线时是否自动尝试领取
+  # true  = 满足条件时上线自动发放
+  # false = 需玩家手动输入 /sgiftloft 领取
+  auto-claim-on-join: true
+
+  # 月份格式（Java DateTimeFormatter 模式），用于记录与展示
+  # 常用：yyyy-MM（2026-08）、yyyy/MM（2026/08）、yyyy-MM-dd（2026-08-01）
+  month-format: "yyyy-MM"
+
+  # 单位文案（用于提示语与 PAPI 占位符 %money_unit% / %points_unit%）
+  units:
+    money: "金币"
+    points: "点券"
+
+  # 上线离线补发：玩家在可领取期间离线，上线时自动补发并使用「离线补发」文案提示
+  offline-compensation: true
+
+  # 领取审计日志：记录谁在何时领取哪一档位，便于管理排查
+  audit:
+    enabled: true
+    file: "logs/claims.log"
+
+  # 调试模式（输出存储读写细节）
+  debug: false
+
+  # 语言（预留）
+  language: zh_CN
+
+# ============================================
+# 存储后端（主辅模型）
+# 优先级：MYSQL(30) > SQLITE(20) > YAML(10)
+# 所有已启用后端中优先级最高者为「主存储」（负责读），
+# 其余后端作为「辅助存储」，在写入时被镜像同步，充当热备份/降级方案。
+# ============================================
+storage:
+  backends:
+    # YAML：零依赖，默认启用，适合中小型服务器
+    yaml:
+      enabled: true
+      file: data/claims.yml
+      # 每次保存是否先备份为 .bak
+      backup-on-save: false
+
+    # SQLite：单文件数据库，无需额外服务
+    # 启用前请确保服务端已提供 org.sqlite.JDBC 驱动（见 pom.xml）
+    sqlite:
+      enabled: false
+      file: data/claims.db
+      table-prefix: "mc_smc_"
+
+    # MySQL：启用后自动成为主存储，可跨服共享月卡领取数据
+    # 仅需 url + 账号密码，驱动已随插件打包
+    mysql:
+      enabled: false
+      # 完整 JDBC 连接串，例如：
+      # jdbc:mysql://localhost:3306/minecraft?useSSL=false&characterEncoding=utf8&serverTimezone=UTC
+      url: "jdbc:mysql://localhost:3306/minecraft?useSSL=false&characterEncoding=utf8"
+      username: root
+      password: ""
+      table-prefix: "mc_smc_"
+      # 连接保活间隔（秒），<=0 关闭
+      keepalive-interval: 1800
+
+  # 镜像策略（仅在有辅助存储时生效）
+  mirror:
+    # 是否将写入镜像到辅助存储
+    enabled: true
+    # 镜像写入是否异步（推荐 true，避免阻塞主线程）
+    async: true
+    # 启动时是否将主存储全量同步到辅助存储
+    sync-on-startup: false

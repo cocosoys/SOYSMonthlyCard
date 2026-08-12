@@ -1,0 +1,61 @@
+# ============================================
+# SOYSMonthlyCard 奖励配置（月卡档位）
+# 每个 tier 对应一组奖励与一个领取权限 permission。
+# 玩家可对“自己拥有权限的所有档位”进行领取；
+# 若拥有多个权限或存在权限继承关系，则可全部领取。
+#
+# 物品字段说明（items 列表，每项一个物品）：
+#   material : 材质名（Bukkit Material 枚举，如 DIAMOND / NETHER_STAR / SKULL_ITEM）
+#   amount   : 数量（默认 1）
+#   data     : 伤害值/数据值（可选，如 SKULL_ITEM 玩家头用 3）
+#   name     : 显示名（支持 & 颜色）
+#   lore     :  Lore 列表（支持 & 颜色）
+#   enchants :  附魔列表（格式 附魔名:等级，如 DAMAGE_ALL:5）
+# ============================================
+
+# 配置版本：reload 时若低于插件版本会自动补全缺失项（请勿手动改低）
+config-version: 1
+
+tiers:
+  # 基础档位：所有拥有 soysmonthlycard.claim 权限的玩家均可领取
+  default:
+    permission: soysmonthlycard.claim
+    rewards:
+      money: 1000
+      points: 100
+      commands:
+        - "say %player_name% 领取了基础月卡"
+      items:
+        - material: DIAMOND
+          amount: 1
+
+  # VIP 档位
+  vip:
+    permission: soysmonthlycard.tier.vip
+    rewards:
+      money: 5000
+      points: 500
+      items:
+        - material: NETHER_STAR
+          amount: 1
+          name: "&bVIP专属星"
+          lore:
+            - "&7每月尊享福利"
+        - material: DIAMOND
+          amount: 5
+
+  # MVP 档位（可在权限插件中让其继承 vip，从而同时领取两档）
+  mvp:
+    permission: soysmonthlycard.tier.mvp
+    rewards:
+      points: 2000
+      items:
+        - material: TOTEM_OF_UNDYING
+          amount: 1
+          name: "&6MVP专属图腾"
+          lore:
+            - "&e至臻月卡奖励"
+        - material: NETHER_STAR
+          amount: 3
+          enchants:
+            - "DAMAGE_ALL:1"

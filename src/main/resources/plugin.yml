@@ -1,0 +1,24 @@
+name: SOYSMonthlyCard
+version: '${project.version}'
+main: soys.soysmonthlycard.SOYSMonthlyCard
+author: SOYS
+description: 每月指定日期后可自动领取的月卡礼包插件
+depend: [Vault, PlayerPoints, PlaceholderAPI]
+commands:
+  sgiftloft:
+    description: 月卡礼包领取与查询
+    aliases: [syk, syueka]
+    usage: /sgiftloft [info|top|reload|migrate]
+permissions:
+  soysmonthlycard.claim:
+    description: 基础月卡档位领取权限
+    default: true
+  soysmonthlycard.tier.vip:
+    description: VIP 月卡档位领取权限
+    default: op
+  soysmonthlycard.tier.mvp:
+    description: MVP 月卡档位领取权限
+    default: op
+  soysmonthlycard.admin:
+    description: 管理权限（重载配置、数据迁移等）
+    default: op

@@ -1,0 +1,39 @@
+# ============================================
+# SOYSMonthlyCard 提示语配置
+# 支持 & 颜色符号；可在文本中使用 PlaceholderAPI 占位符
+# 可用变量：%claim_day% %player_name% %tiers% %month% %last% %status% %reason% %count% %rank% %player%
+#           %money_unit% %points_unit%（由 config.yml 的 settings.units 提供）
+# ============================================
+
+no-permission: "&c你没有权限领取任何月卡档位。"
+not-claimed-yet: "&c本月尚未到领取时间（每月 %claim_day% 号之后才可领取）。"
+already-claimed: "&c你本月可领取的月卡档位都已领取过了。"
+claimed: "&a领取成功！已领取档位：&e%tiers%"
+offline-compensated: "&a离线补发成功！已领取档位：&e%tiers%"
+claimed-broadcast: "&e%player_name% &a领取了月卡档位：&e%tiers%"
+claim-blocked: "&c档位 %tiers% 被拦截，无法领取：%reason%"
+plugin-reload: "&aSOYSMonthlyCard 配置已重载。"
+
+# 查询 /info 相关
+info-header: "&a===== 我的月卡领取状态 ====="
+info-month: "&7当前月份: &f%month%"
+info-claim-day: "&7每月可领取日: &f%claim_day% 号起"
+info-tier: "&7- &f%tier%&7: %status% &7(上次: %last%)"
+info-status-no-perm: "&c无权限"
+info-status-claimed: "&a已领取"
+info-status-available: "&e可领取"
+info-status-locked: "&7未到时间"
+info-note: "&7使用 /sgiftloft 领取"
+
+# 排行榜 /top 相关
+top-header: "&a===== 本月月卡领取排行榜 (共 %count% 人) ====="
+top-empty: "&7暂无玩家领取。"
+top-line: "&7#%rank% &f%player% &7档位: %tiers%"
+
+# 迁移相关
+migrate-start: "&a开始迁移数据：从 %from% 到 %to% …"
+migrate-done: "&a数据迁移完成：共处理 %count% 名玩家。"
+migrate-unknown: "&c未知迁移方向: %dir%"
+migrate-backend-disabled: "&c存储后端 %type% 未启用，无法执行迁移。"
+dependency-missing: "&c依赖缺失：%dep%，插件无法正常运行。"
+storage-mysql-failed: "&cMySQL 连接失败，已回退到 YAML 存储。"
