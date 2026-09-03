@@ -23,7 +23,7 @@ info-status-no-perm: "&c无权限"
 info-status-claimed: "&a已领取"
 info-status-available: "&e可领取"
 info-status-locked: "&7未到时间"
-info-note: "&7使用 /sgiftloft 领取"
+info-note: "&7使用 /monthlycard 领取"
 
 # 排行榜 /top 相关
 top-header: "&a===== 本月月卡领取排行榜 (共 %count% 人) ====="

@@ -5,10 +5,10 @@ author: SOYS
 description: 每月指定日期后可自动领取的月卡礼包插件
 depend: [Vault, PlayerPoints, PlaceholderAPI]
 commands:
-  sgiftloft:
+  monthlycard:
     description: 月卡礼包领取与查询
-    aliases: [syk, syueka]
-    usage: /sgiftloft [info|top|reload|migrate]
+    aliases: [syk, syueka, sgiftloft]
+    usage: /monthlycard [info|top|reload|migrate]
 permissions:
   soysmonthlycard.claim:
     description: 基础月卡档位领取权限

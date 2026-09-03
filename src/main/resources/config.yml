@@ -1,7 +1,7 @@
 # ============================================
 # SOYSMonthlyCard 主配置
 # 奖励内容见 rewards.yml，提示语见 message.yml
-# 修改后可用 /sgiftloft reload 重载
+# 修改后可用 /monthlycard reload 重载
 # ============================================
 
 settings:
@@ -10,7 +10,7 @@ settings:
 
   # 玩家上线时是否自动尝试领取
   # true  = 满足条件时上线自动发放
-  # false = 需玩家手动输入 /sgiftloft 领取
+  # false = 需玩家手动输入 /monthlycard 领取
   auto-claim-on-join: true
 
   # 月份格式（Java DateTimeFormatter 模式），用于记录与展示

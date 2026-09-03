@@ -23,14 +23,14 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * /sgiftloft —— 领取月卡礼包 / 查询 / 管理
+ * /monthlycard —— 领取月卡礼包 / 查询 / 管理
  * 子指令:
  *   (无)       领取当前可领档位
  *   info       查看自己的各档位领取状态
  *   top        查看本月已领取排行榜
  *   reload     重载配置与存储（需管理员）
  *   migrate    数据迁移（如 mysql2yaml / yaml2mysql / sqlite2mysql，需管理员）
- * 别名: /syk /syueka
+ * 别名: /syk /syueka /sgiftloft（兼容旧命令名）
  */
 public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
 
@@ -125,7 +125,7 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
                 MessageUtil.tell(player, line);
             }
         }
-        MessageUtil.tell(player, msg.getString("info-note", "&7使用 /sgiftloft 领取"));
+        MessageUtil.tell(player, msg.getString("info-note", "&7使用 /monthlycard 领取"));
     }
 
     /** 查看本月已领取排行榜 */
@@ -162,7 +162,7 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 2) {
-            MessageUtil.tell(sender, "&c用法: /sgiftloft migrate <mysql2yaml|yaml2mysql|sqlite2mysql|...>");
+            MessageUtil.tell(sender, "&c用法: /monthlycard migrate <mysql2yaml|yaml2mysql|sqlite2mysql|...>");
             return true;
         }
         String dir = args[1].toLowerCase();

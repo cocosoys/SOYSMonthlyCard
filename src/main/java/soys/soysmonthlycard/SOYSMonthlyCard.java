@@ -87,8 +87,8 @@ public final class SOYSMonthlyCard extends JavaPlugin {
         // 注册监听器与指令
         getServer().getPluginManager().registerEvents(new JoinListener(this), this);
         MonthlyCardCommand cmd = new MonthlyCardCommand(this, claimManager);
-        getCommand("sgiftloft").setExecutor(cmd);
-        getCommand("sgiftloft").setTabCompleter(cmd);
+        getCommand("monthlycard").setExecutor(cmd);
+        getCommand("monthlycard").setTabCompleter(cmd);
 
         getLogger().info("SOYSMonthlyCard 已启用 | 月卡领取日: 每月 "
                 + configManager.getClaimDay() + " 号起 | 主存储: "
