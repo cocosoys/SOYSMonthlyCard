@@ -19,6 +19,9 @@ public class JoinListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
+        // 上线时异步预加载领取记录到缓存，避免后续领取判定时阻塞主线程
+        plugin.getStorage().preload(event.getPlayer().getUniqueId());
+
         if (!plugin.getConfigManager().isAutoClaimOnJoin()) {
             return;
         }

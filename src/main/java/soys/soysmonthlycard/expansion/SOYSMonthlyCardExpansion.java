@@ -4,6 +4,7 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import soys.soysmonthlycard.SOYSMonthlyCard;
 
 import java.time.LocalDate;
@@ -65,10 +66,19 @@ public class SOYSMonthlyCardExpansion extends PlaceholderExpansion {
                 if (tiers == null) {
                     return "false";
                 }
+                Player onlinePlayer = player.getPlayer();
                 for (String tierKey : tiers.getKeys(false)) {
                     String perm = tiers.getString(tierKey + ".permission", "");
-                    if ((perm.isEmpty() || player.getPlayer() != null && player.getPlayer().hasPermission(perm))
-                            && !plugin.getClaimManager().hasClaimed(uuid, tierKey)) {
+                    boolean hasPerm;
+                    if (perm.isEmpty()) {
+                        hasPerm = true;
+                    } else if (onlinePlayer != null) {
+                        hasPerm = onlinePlayer.hasPermission(perm);
+                    } else {
+                        // 离线玩家无法检查权限，保守跳过该档位（避免误报可领取）
+                        continue;
+                    }
+                    if (hasPerm && !plugin.getClaimManager().hasClaimed(uuid, tierKey)) {
                         return "true";
                     }
                 }

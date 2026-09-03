@@ -28,6 +28,16 @@ public class ClaimManager {
     /** 默认月份格式（config.yml 可覆盖） */
     public static final String DEFAULT_MONTH_PATTERN = "yyyy-MM";
 
+    /**
+     * 1.13+ 材质名到 1.12.2 的兼容映射。
+     * 部分材质在 1.13 扁平化更新中被重命名，用户若从高版本教程复制配置，
+     * 在此映射后可正常解析。新增映射时保持 key 为大写。
+     */
+    private static final java.util.Map<String, String> MATERIAL_COMPAT = new java.util.HashMap<>();
+    static {
+        MATERIAL_COMPAT.put("TOTEM_OF_UNDYING", "TOTEM");
+    }
+
     public ClaimManager(SOYSMonthlyCard plugin) {
         this.plugin = plugin;
     }
@@ -219,6 +229,11 @@ public class ClaimManager {
             String matName = (String) map.get("material");
             if (matName == null) {
                 continue;
+            }
+            // 1.12.2 兼容：先查高版本材质名映射
+            String compatName = MATERIAL_COMPAT.get(matName.toUpperCase());
+            if (compatName != null) {
+                matName = compatName;
             }
             Material material = Material.matchMaterial(matName);
             if (material == null) {

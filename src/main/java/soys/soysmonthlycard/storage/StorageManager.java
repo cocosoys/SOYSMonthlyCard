@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +33,12 @@ import java.util.logging.Level;
  * <b>写入顺序</b>：异步写入被收敛到单线程执行器，保证同一玩家的写操作严格有序，
  * 避免并发写导致的数据错乱。
  * </p>
+ * <p>
+ * <b>内存缓存</b>：维护 {@code ConcurrentHashMap<UUID, ClaimRecord>} 缓存层，
+ * 玩家上线时通过 {@link #preload(UUID)} 异步预加载，领取判定（{@link #loadClaims} /
+ * {@link #getClaimedMonth}）优先命中缓存，避免主线程同步读数据库；
+ * 写入（{@link #markClaimed} / {@link #saveClaimsAsync}）先同步更新缓存，再异步持久化。
+ * </p>
  */
 public class StorageManager {
 
@@ -45,6 +52,9 @@ public class StorageManager {
 
     /** 串行写入线程，保证写顺序 */
     private ExecutorService writeExecutor;
+
+    /** 内存缓存：玩家 UUID -> 领取记录，避免主线程同步读数据库 */
+    private final Map<UUID, ClaimRecord> cache = new ConcurrentHashMap<>();
 
     public StorageManager(SOYSMonthlyCard plugin) {
         this.plugin = plugin;
@@ -61,6 +71,7 @@ public class StorageManager {
      */
     public void initialize() {
         shutdownInternal(false);
+        cache.clear();
 
         this.writeExecutor = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "SOYSMonthlyCard-Storage");
@@ -162,6 +173,7 @@ public class StorageManager {
         storages.clear();
         secondaries.clear();
         primary = null;
+        cache.clear();
     }
 
     /**
@@ -267,11 +279,20 @@ public class StorageManager {
     // ================================================================
 
     /**
-     * 从主存储同步读取玩家领取记录。<b>可能阻塞，请勿在主线程调用 SQL 后端。</b>
+     * 从缓存读取玩家领取记录；缓存未命中时从主存储加载并放入缓存。
+     * <p>缓存命中时直接返回，不会阻塞主线程。</p>
      */
     public ClaimRecord loadClaims(UUID uuid) {
+        ClaimRecord cached = cache.get(uuid);
+        if (cached != null) {
+            return new ClaimRecord(cached.getUuid(), cached.getTiers());
+        }
         try {
-            return primary.load(uuid);
+            ClaimRecord record = primary.load(uuid);
+            if (record != null) {
+                cache.put(uuid, new ClaimRecord(record.getUuid(), record.getTiers()));
+            }
+            return record;
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "读取 " + uuid + " 的领取记录失败: " + e.getMessage(), e);
             return null;
@@ -285,6 +306,26 @@ public class StorageManager {
         submit(() -> {
             ClaimRecord result = loadClaims(uuid);
             sync(() -> callback.accept(result));
+        });
+    }
+
+    /**
+     * 异步预加载玩家领取记录到缓存（玩家上线时调用，避免后续领取时阻塞主线程）。
+     * 缓存已存在时直接返回，不重复加载。
+     */
+    public void preload(UUID uuid) {
+        if (cache.containsKey(uuid)) {
+            return;
+        }
+        submit(() -> {
+            try {
+                ClaimRecord record = primary.load(uuid);
+                if (record != null) {
+                    cache.put(uuid, new ClaimRecord(record.getUuid(), record.getTiers()));
+                }
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.WARNING, "预加载 " + uuid + " 的领取记录失败: " + e.getMessage(), e);
+            }
         });
     }
 
@@ -345,19 +386,24 @@ public class StorageManager {
     // ================================================================
 
     /**
-     * 异步保存记录：主存储写入后镜像到辅助存储。
+     * 异步保存记录：先更新缓存，再异步写入主存储并镜像到辅助存储。
      */
     public void saveClaimsAsync(ClaimRecord record) {
+        if (record == null || record.getUuid() == null) {
+            return;
+        }
+        cache.put(record.getUuid(), new ClaimRecord(record.getUuid(), record.getTiers()));
         submit(() -> saveClaimsBlocking(record));
     }
 
     /**
-     * 同步保存记录（阻塞当前线程），关服流程使用。
+     * 同步保存记录（阻塞当前线程），关服流程使用。同时更新缓存。
      */
     public void saveClaimsBlocking(ClaimRecord record) {
         if (record == null || record.getUuid() == null) {
             return;
         }
+        cache.put(record.getUuid(), new ClaimRecord(record.getUuid(), record.getTiers()));
         try {
             primary.save(record);
             debug("已保存 " + record.getUuid() + " 的领取记录到 " + primary.getType().getId());
@@ -370,9 +416,10 @@ public class StorageManager {
     }
 
     /**
-     * 异步删除某玩家的领取记录。
+     * 异步删除某玩家的领取记录。先清除缓存，再异步删除持久化数据。
      */
     public void deleteClaimsAsync(UUID uuid) {
+        cache.remove(uuid);
         submit(() -> {
             try {
                 primary.delete(uuid);
@@ -386,21 +433,29 @@ public class StorageManager {
     }
 
     /**
-     * 标记某玩家某档位在指定月份已领取（同步写入主存储 + 镜像，防止并发重复发放）。
+     * 标记某玩家某档位在指定月份已领取。
+     * <p>先同步更新内存缓存（保证后续 hasClaimed 立即可见，且不阻塞主线程），
+     * 再异步持久化到主存储并镜像到辅助存储。</p>
      */
     public void markClaimed(UUID uuid, String tier, String month) {
-        ClaimRecord rec;
-        try {
-            ClaimRecord loaded = primary.load(uuid);
-            rec = loaded == null ? new ClaimRecord(uuid) : loaded;
-            rec.setTier(tier, month);
-            primary.save(rec);
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "主存储标记领取失败: " + e.getMessage(), e);
-            return;
-        }
-        ClaimRecord finalRec = rec;
-        mirror(storage -> storage.save(finalRec), "标记领取 " + uuid + "/" + tier);
+        // 1. 同步更新缓存（线程安全，compute 保证原子性）
+        ClaimRecord updated = cache.compute(uuid, (k, existing) -> {
+            ClaimRecord record = existing != null ? existing : new ClaimRecord(uuid);
+            record.setTier(tier, month);
+            return record;
+        });
+        // 2. 异步持久化（使用副本，避免缓存对象被并发修改）
+        ClaimRecord toSave = new ClaimRecord(updated.getUuid(), updated.getTiers());
+        submit(() -> {
+            try {
+                primary.save(toSave);
+                debug("已标记领取 " + uuid + "/" + tier + " 到 " + primary.getType().getId());
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "主存储标记领取失败: " + e.getMessage(), e);
+                return;
+            }
+            mirror(storage -> storage.save(toSave), "标记领取 " + uuid + "/" + tier);
+        });
     }
 
     /**

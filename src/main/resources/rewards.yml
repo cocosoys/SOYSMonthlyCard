@@ -50,7 +50,7 @@ tiers:
     rewards:
       points: 2000
       items:
-        - material: TOTEM_OF_UNDYING
+        - material: TOTEM
           amount: 1
           name: "&6MVP专属图腾"
           lore:
