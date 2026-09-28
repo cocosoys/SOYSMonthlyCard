@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOYS 月卡 · 管理后台 ERP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2349d6ff'/%3E%3Crect x='7' y='8' width='18' height='16' fill='%230d1020'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0c1020; --side:#0a0e1c; --panel:#161c36; --panel2:#1d2547; --line:#2a3358;
+  --txt:#e9edfb; --mut:#939cc2; --blue:#4a86f0; --cyan:#49d6ff; --gold:#ffb627;
+  --green:#46cf7a; --red:#f0584f; --amber:#f5a623;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif;color:var(--txt);background:var(--bg);font-size:14px;}
+button{font-family:inherit;}
+a{color:var(--cyan);text-decoration:none;}
+
+/* ===== 布局 ===== */
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:224px;background:var(--side);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:40;}
+.side-brand{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid var(--line);}
+.side-brand svg{width:32px;height:32px;}
+.side-brand b{font-size:15px;} .side-brand small{display:block;font-size:10.5px;color:var(--mut);letter-spacing:1px;}
+.side-nav{padding:14px 12px;flex:1;}
+.side-nav .grp{font-size:11px;color:#5c6590;letter-spacing:1.5px;padding:8px 12px 6px;}
+.nav-item{display:flex;align-items:center;gap:11px;width:100%;border:none;background:transparent;
+  color:var(--mut);padding:11px 13px;border-radius:9px;cursor:pointer;font-size:14px;text-align:left;margin-bottom:3px;transition:.13s;}
+.nav-item svg{width:19px;height:19px;flex:none;}
+.nav-item:hover{background:rgba(255,255,255,.05);color:var(--txt);}
+.nav-item.active{background:linear-gradient(90deg,rgba(74,134,240,.25),rgba(74,134,240,.06));color:#fff;}
+.nav-item.active svg{color:var(--cyan);}
+.side-foot{padding:14px;border-top:1px solid var(--line);}
+.side-foot a{display:flex;align-items:center;gap:9px;color:var(--mut);font-size:13px;padding:9px 12px;border-radius:8px;}
+.side-foot a:hover{color:var(--txt);background:rgba(255,255,255,.05);}
+
+.main{flex:1;margin-left:224px;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:62px;border-bottom:1px solid var(--line);background:rgba(12,16,32,.85);
+  display:flex;align-items:center;justify-content:space-between;padding:0 26px;position:sticky;top:0;z-index:30;}
+.topbar h1{font-size:18px;font-weight:700;}
+.topbar .op{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:13px;}
+.topbar .op .badge{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 13px;color:var(--cyan);}
+.content{padding:26px;}
+.view{display:none;} .view.active{display:block;}
+
+/* ===== 概览统计卡 ===== */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+.stat-card .lab{color:var(--mut);font-size:13px;display:flex;align-items:center;gap:8px;}
+.stat-card .num{font-size:30px;font-weight:800;margin-top:8px;letter-spacing:.5px;}
+.stat-card .num small{font-size:14px;color:var(--mut);font-weight:500;}
+.stat-card.c-gold .num{color:var(--gold);} .stat-card.c-cyan .num{color:var(--cyan);}
+.stat-card.c-green .num{color:var(--green);} .stat-card.c-blue .num{color:var(--blue);}
+
+/* ===== 面板 / 表格 ===== */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:20px;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
+.panel-head h2{font-size:15.5px;display:flex;align-items:center;gap:9px;}
+.panel-head .acts{display:flex;gap:9px;}
+.panel-body{padding:20px;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+table.tfixed{table-layout:fixed;}
+th,td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle;}
+th{color:var(--mut);font-weight:600;font-size:12.5px;background:rgba(255,255,255,.02);white-space:nowrap;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.025);}
+.tier-key{font-weight:700;font-family:"Courier New",monospace;}
+.tier-key small{display:block;color:var(--mut);font-weight:400;font-family:inherit;font-size:11.5px;margin-top:2px;}
+.chip{display:inline-block;font-size:11.5px;padding:3px 9px;border-radius:6px;font-weight:600;}
+.chip.on{background:rgba(70,207,122,.16);color:var(--green);}
+.chip.off{background:rgba(240,88,79,.16);color:var(--red);}
+.muted{color:var(--mut);}
+.mono{font-family:"Courier New",monospace;}
+
+/* 行操作按钮 */
+.row-actions{display:flex;flex-wrap:wrap;gap:6px;}
+.ib{border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:8px;
+  padding:6px 11px;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:.12s;white-space:nowrap;}
+.ib svg{width:14px;height:14px;}
+.ib:hover{border-color:var(--cyan);color:var(--cyan);}
+.ib.gold{color:var(--gold);} .ib.gold:hover{border-color:var(--gold);}
+.ib.green:hover{border-color:var(--green);color:var(--green);}
+.ib.red:hover{border-color:var(--red);color:var(--red);}
+.ib.on-state{color:var(--green);border-color:rgba(70,207,122,.4);}
+.ib.off-state{color:var(--red);border-color:rgba(240,88,79,.4);}
+
+/* ===== 通用按钮 / 表单 ===== */
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:9px;
+  padding:9px 17px;font-size:13.5px;cursor:pointer;transition:.13s;display:inline-flex;align-items:center;gap:7px;}
+.btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.btn.primary{background:linear-gradient(180deg,#5a92f5,#3f6fd8);border-color:#3f6fd8;color:#fff;}
+.btn.primary:hover{filter:brightness(1.08);color:#fff;}
+.btn.gold{background:linear-gradient(180deg,#ffd66b,#ffb627);border-color:#d9941a;color:#3a2606;font-weight:700;}
+.btn.gold:hover{filter:brightness(1.06);color:#3a2606;}
+.btn.danger{border-color:rgba(240,88,79,.5);color:var(--red);}
+.btn.danger:hover{background:rgba(240,88,79,.12);color:var(--red);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:13px;color:var(--mut);margin-bottom:6px;font-weight:600;}
+.field input[type=text],.field input[type=number],.field select,.field textarea{
+  width:100%;background:#10152c;border:1px solid var(--line);border-radius:9px;color:var(--txt);
+  padding:10px 12px;font-size:13.5px;font-family:inherit;}
+.field textarea{resize:vertical;min-height:64px;font-family:"Courier New",monospace;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--cyan);}
+.field .hint{font-size:11.5px;color:#6a739c;margin-top:5px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.switch input{width:18px;height:18px;accent-color:var(--cyan);}
+.form-section{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px;}
+.form-section h3{font-size:13.5px;margin-bottom:14px;color:var(--cyan);letter-spacing:.5px;}
+
+/* ===== MC 物品栏（礼品配置） ===== */
+.inv-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;background:#6e6e6e;
+  padding:10px;border-radius:8px;border:3px solid #4a4a4a;}
+.inv-slot{aspect-ratio:1;background:#8b8b8b;border-radius:4px;position:relative;
+  border-top:2px solid #373737;border-left:2px solid #373737;border-right:2px solid #fff;border-bottom:2px solid #fff;
+  cursor:pointer;}
+.inv-slot .px{position:absolute;inset:4px;}
+.inv-slot .px svg{width:100%;height:100%;}
+.inv-slot .amt{position:absolute;right:2px;bottom:0;font-size:12px;font-weight:800;color:#fff;
+  text-shadow:1px 1px 0 #3f3f3f;font-family:"Courier New",monospace;z-index:2;}
+.inv-slot .ph{display:flex;align-items:center;justify-content:center;height:100%;font-family:"Courier New",monospace;
+  font-weight:800;font-size:12px;color:#5a5a5a;text-shadow:1px 1px 0 #c6c6c6;}
+.inv-slot:hover{box-shadow:0 0 0 2px rgba(255,255,255,.6) inset;}
+.inv-slot.empty:hover::after{content:'+';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:#555;font-weight:800;}
+.inv-tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.inv-tools .sp{flex:1;}
+.inv-cap{font-size:12.5px;color:var(--mut);}
+
+/* ===== 物品编辑器（仿 mcmod） ===== */
+.editor{display:grid;grid-template-columns:200px 1fr;gap:22px;}
+.preview-stage{background:linear-gradient(160deg,#232a4d,#121730);border:1px solid var(--line);border-radius:12px;
+  padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;}
+.big-item{width:120px;height:120px;position:relative;background:rgba(0,0,0,.25);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;}
+.big-item svg{width:96px;height:96px;}
+.big-item .glint{position:absolute;inset:0;border-radius:8px;pointer-events:none;opacity:0;
+  background:linear-gradient(120deg,transparent 30%,rgba(180,111,230,.55) 45%,rgba(255,148,216,.5) 55%,transparent 70%);
+  background-size:250% 100%;}
+.big-item.enchanted .glint{opacity:1;animation:glint 2.2s linear infinite;}
+@keyframes glint{0%{background-position:150% 0;}100%{background-position:-150% 0;}}
+.preview-stage .pv-tt{margin-top:16px;background:rgba(16,4,32,.9);border:2px solid #2a0a50;border-radius:5px;
+  padding:8px 11px;font-family:"Courier New",monospace;font-size:12px;width:100%;min-height:50px;word-break:break-word;}
+.ench-list{display:flex;flex-direction:column;gap:8px;}
+.ench-row{display:grid;grid-template-columns:1fr 90px 38px;gap:8px;align-items:center;}
+.ench-row select,.ench-row input{background:#10152c;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:8px;font-family:inherit;font-size:13px;}
+
+/* ===== 弹窗 ===== */
+.modal-mask{position:fixed;inset:0;background:rgba(5,8,20,.72);z-index:100;display:none;align-items:center;justify-content:center;padding:24px;}
+.modal-mask.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:680px;max-width:100%;
+  max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.6);}
+.modal.lg{width:860px;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:17px 22px;border-bottom:1px solid var(--line);}
+.modal-head h2{font-size:16px;display:flex;align-items:center;gap:9px;}
+.modal-close{border:none;background:transparent;color:var(--mut);font-size:22px;cursor:pointer;width:34px;height:34px;border-radius:8px;}
+.modal-close:hover{background:rgba(255,255,255,.07);color:#fff;}
+.modal-body{padding:22px;overflow-y:auto;}
+.modal-foot{padding:15px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
+
+/* 玩家选择 */
+.player-input{display:flex;gap:8px;align-items:center;}
+.player-input input{flex:1;}
+.player-suggest{position:relative;}
+.player-dropdown{position:absolute;top:100%;left:0;right:0;background:#141a36;border:1px solid var(--line);
+  border-radius:9px;margin-top:4px;max-height:180px;overflow-y:auto;z-index:120;display:none;}
+.player-dropdown.show{display:block;}
+.player-dropdown div{padding:9px 13px;cursor:pointer;font-size:13px;}
+.player-dropdown div:hover{background:rgba(73,214,255,.12);color:var(--cyan);}
+
+/* 记录/日志 */
+.log-box{background:#080b18;border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  font-family:"Courier New",monospace;font-size:12.5px;max-height:560px;overflow-y:auto;line-height:1.7;}
+.log-line{white-space:pre-wrap;word-break:break-all;color:#b9c1e0;}
+.log-line .lvl-ok{color:var(--green);} .log-line .lvl-err{color:var(--red);} .log-line .lvl-info{color:var(--cyan);}
+.empty-state{text-align:center;color:var(--mut);padding:40px 20px;font-size:13.5px;}
+.empty-state svg{width:54px;height:54px;margin-bottom:12px;opacity:.5;}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(16px);background:#1d2547;
+  border:1px solid var(--line);border-radius:11px;padding:12px 22px;font-size:13.5px;z-index:300;opacity:0;transition:.24s;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:rgba(70,207,122,.5);} .toast.err{border-color:rgba(240,88,79,.5);}
+
+/* ===== 响应式 ===== */
+.menu-toggle{display:none;border:none;background:transparent;color:var(--txt);font-size:22px;cursor:pointer;}
+@media(max-width:900px){
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .editor{grid-template-columns:1fr;}
+}
+@media(max-width:760px){
+  .sidebar{transform:translateX(-100%);transition:.25s;} .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;} .menu-toggle{display:block;}
+  .row2{grid-template-columns:1fr;} .content{padding:16px;}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== 侧边导航 ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="side-brand">
+      <svg viewBox="0 0 32 32"><rect x="3" y="13" width="26" height="16" rx="2" fill="#c9821a"/><rect x="3" y="11" width="26" height="5" rx="2" fill="#ffb627"/><rect x="13" y="4" width="6" height="9" fill="#ffe9a8"/><rect x="11" y="2" width="10" height="4" rx="2" fill="#ff6b6b"/></svg>
+      <div><b>月卡管理 ERP</b><small>SOYS MONTHLY CARD</small></div>
+    </div>
+    <nav class="side-nav">
+      <div class="grp">运营管理</div>
+      <button class="nav-item active" data-view="tiers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>礼包列表
+      </button>
+      <button class="nav-item" data-view="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>设置
+      </button>
+      <button class="nav-item" data-view="logs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>日志
+      </button>
+    </nav>
+    <div class="side-foot">
+      <a href="index.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>返回用户中心</a>
+    </div>
+  </aside>
+
+  <!-- ===== 主区域 ===== -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <h1 id="page-title">礼包列表</h1>
+      </div>
+      <div class="op">
+        <span>当前操作者</span>
+        <span class="badge" id="op-name">检测中…</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== 视图：礼包列表 ===== -->
+      <section class="view active" id="view-tiers">
+        <div class="stat-grid" id="stat-grid"></div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#49d6ff" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+              月卡礼包档位
+            </h2>
+            <div class="acts">
+              <button class="btn" id="btn-refresh-tiers">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>刷新
+              </button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <colgroup>
+                <col style="width:13%"><col style="width:19%"><col style="width:9%"><col style="width:11%">
+                <col style="width:11%"><col style="width:11%"><col style="width:26%">
+              </colgroup>
+              <thead><tr>
+                <th>档位</th><th>权限节点</th><th>状态</th><th>金币</th><th>点券</th>
+                <th>本月领取</th><th>操作</th>
+              </tr></thead>
+              <tbody id="tiers-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 视图：设置 ===== -->
+      <section class="view" id="view-settings">
+        <div class="panel">
+          <div class="panel-head"><h2>基础设置</h2>
+            <div class="acts"><button class="btn" id="btn-reload-settings">重新读取</button></div>
+          </div>
+          <div class="panel-body" id="settings-body"><div class="empty-state">加载中…</div></div>
+        </div>
+      </section>
+
+      <!-- ===== 视图：日志 ===== -->
+      <section class="view" id="view-logs">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>领取审计日志 <span class="chip" id="log-status" style="margin-left:4px;">—</span></h2>
+            <div class="acts"><button class="btn" id="btn-refresh-logs">刷新日志</button></div>
+          </div>
+          <div class="panel-body">
+            <div class="muted" style="margin-bottom:10px;font-size:12.5px;" id="log-file">文件：—</div>
+            <div class="log-box" id="log-box"><div class="empty-state">加载中…</div></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== 弹窗容器（由 JS 填充） ===== -->
+<div class="modal-mask" id="modal-mask">
+  <div class="modal" id="modal-box">
+    <div class="modal-head">
+      <h2 id="modal-title">标题</h2>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip" style="display:none;"></div>
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

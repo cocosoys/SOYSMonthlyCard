@@ -4,6 +4,7 @@ main: soys.soysmonthlycard.SOYSMonthlyCard
 author: SOYS
 description: 每月指定日期后可自动领取的月卡礼包插件
 depend: [Vault, PlayerPoints, PlaceholderAPI]
+softdepend: [SOYSHTTPOverMC]
 commands:
   monthlycard:
     description: 月卡礼包领取与查询

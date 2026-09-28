@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOYS 月卡中心 · Monthly Rewards</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ffaa00'/%3E%3Crect x='6' y='12' width='20' height='14' fill='%23c9771c'/%3E%3Crect x='14' y='6' width='4' height='20' fill='%23fff3c4'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0d1020; --bg2:#141a33; --panel:rgba(23,29,56,.92); --panel2:#1b2347;
+  --line:#2c3563; --gold:#ffb627; --gold2:#ffd66b; --gold-deep:#c9821a;
+  --txt:#eef1fb; --mut:#9aa3c7; --green:#5ddb6b; --red:#ff6b6b; --cyan:#49d6ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif;
+  color:var(--txt); background:var(--bg); line-height:1.55;
+  background:
+    radial-gradient(1100px 520px at 50% -8%, rgba(255,182,39,.16), transparent 60%),
+    radial-gradient(900px 600px at 100% 30%, rgba(73,214,255,.08), transparent 60%),
+    linear-gradient(180deg,#0d1020 0%, #0b0e1c 100%);
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px;}
+
+/* ===== 顶部导航 ===== */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(11,14,30,.82);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:.4px;}
+.brand .logo{width:34px;height:34px;}
+.brand small{display:block;font-size:11px;color:var(--mut);font-weight:500;letter-spacing:1.5px;}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-links a{color:var(--mut);text-decoration:none;font-size:14px;padding:8px 13px;border-radius:8px;transition:.15s;}
+.nav-links a:hover{color:var(--txt);background:rgba(255,182,39,.12);}
+.btn-admin{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#3a2606!important;
+  font-weight:700;box-shadow:0 3px 0 var(--gold-deep);}
+.btn-admin:hover{filter:brightness(1.06);background:linear-gradient(180deg,var(--gold2),var(--gold));}
+
+/* ===== Hero ===== */
+.hero{position:relative;text-align:center;padding:72px 0 54px;overflow:hidden;}
+.hero .gift{width:150px;height:150px;margin:0 auto 22px;animation:float 4s ease-in-out infinite;filter:drop-shadow(0 18px 30px rgba(255,182,39,.35));}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.hero h1{font-size:42px;font-weight:900;letter-spacing:1px;
+  background:linear-gradient(180deg,#fff0c4,var(--gold) 55%,var(--gold-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero .sub{color:var(--mut);margin-top:12px;font-size:16px;}
+.hero .meta-pills{display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap;}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;
+  padding:8px 18px;font-size:13.5px;color:var(--txt);display:flex;align-items:center;gap:7px;}
+.pill b{color:var(--gold2);}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--mut);}
+.pill .dot.on{background:var(--green);box-shadow:0 0 8px var(--green);}
+.scroll-hint{margin-top:40px;color:var(--mut);font-size:13px;letter-spacing:2px;}
+.scroll-hint .mouse{width:24px;height:38px;border:2px solid var(--mut);border-radius:13px;margin:0 auto 9px;position:relative;}
+.scroll-hint .mouse::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;background:var(--gold);border-radius:2px;transform:translateX(-50%);animation:wheel 1.6s infinite;}
+@keyframes wheel{0%{opacity:1;top:7px}100%{opacity:0;top:18px}}
+
+/* ===== 电梯楼层（档位） ===== */
+.floors{position:relative;padding:10px 0 70px;}
+.floor{scroll-margin-top:80px;margin-bottom:34px;}
+.tier-card{display:grid;grid-template-columns:150px 1fr;gap:0;background:var(--panel);
+  border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  box-shadow:0 18px 50px rgba(0,0,0,.4);transition:transform .2s, box-shadow .2s;}
+.tier-card:hover{transform:translateY(-3px);}
+.tier-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:26px 16px;position:relative;overflow:hidden;text-align:center;}
+.tier-badge .ticon{width:84px;height:84px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.4));}
+.tier-badge .tname{margin-top:12px;font-size:21px;font-weight:900;letter-spacing:1px;}
+.tier-badge .teng{font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.7);margin-top:3px;}
+.tier-body{padding:24px 26px;border-left:1px solid var(--line);}
+.tier-body h3{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:9px;}
+.tier-body h3 .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;letter-spacing:.5px;}
+.reward-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.currency{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:11px;padding:9px 15px;font-size:14px;}
+.currency .ci{width:22px;height:22px;}
+.currency b{font-size:16px;}
+.currency.gold b{color:var(--gold2);} .currency.points b{color:var(--cyan);}
+.items-row{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:8px;}
+.tier-foot{display:flex;align-items:center;justify-content:space-between;margin-top:16px;flex-wrap:wrap;gap:12px;}
+.status-note{font-size:13.5px;color:var(--mut);display:flex;align-items:center;gap:8px;}
+.status-note.claimed{color:var(--green);}
+.btn-claim{border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:15px;
+  padding:12px 30px;border-radius:11px;color:#3a2606;letter-spacing:1px;
+  background:linear-gradient(180deg,var(--gold2),var(--gold));box-shadow:0 4px 0 var(--gold-deep),0 8px 18px rgba(255,182,39,.3);transition:.12s;}
+.btn-claim:hover{filter:brightness(1.07);} .btn-claim:active{transform:translateY(3px);box-shadow:0 1px 0 var(--gold-deep);}
+.btn-claim:disabled{background:#3a4066;box-shadow:0 4px 0 #2a2f4d;color:#8b93b8;cursor:not-allowed;}
+
+/* 档位配色 */
+.tier-default .tier-badge{background:linear-gradient(160deg,#3a4670,#27806b2c);}
+.tier-default .tier-badge .tname{color:#8fe6c8;} .tier-default .tag{background:rgba(93,219,107,.16);color:var(--green);}
+.tier-vip .tier-badge{background:linear-gradient(160deg,#1c5f8a,#11304a);}
+.tier-vip .tier-badge .tname{color:#7fdcff;} .tier-vip .tag{background:rgba(73,214,255,.16);color:var(--cyan);}
+.tier-mvp .tier-badge{background:linear-gradient(160deg,#7a4a12,#4a2c08);}
+.tier-mvp .tier-badge .tname{color:var(--gold2);} .tier-mvp .tag{background:rgba(255,182,39,.18);color:var(--gold2);}
+
+/* ===== 电梯侧边导航 ===== */
+.elevator{position:fixed;right:26px;top:50%;transform:translateY(-50%);z-index:60;
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 9px;
+  display:flex;flex-direction:column;gap:11px;box-shadow:0 12px 34px rgba(0,0,0,.45);}
+.elevator button{border:none;background:transparent;cursor:pointer;width:14px;height:14px;border-radius:50%;
+  background:#39406a;position:relative;transition:.15s;padding:0;}
+.elevator button:hover{background:var(--mut);}
+.elevator button.active{background:var(--gold);box-shadow:0 0 10px var(--gold);transform:scale(1.2);}
+.elevator button span{position:absolute;right:24px;top:50%;transform:translateY(-50%);white-space:nowrap;
+  background:#0a0e20;border:1px solid var(--line);padding:4px 11px;border-radius:7px;font-size:12px;
+  color:var(--txt);opacity:0;pointer-events:none;transition:.15s;}
+.elevator button:hover span{opacity:1;}
+.elevator .rail{width:2px;background:var(--line);position:absolute;left:50%;top:14px;bottom:14px;transform:translateX(-50%);z-index:-1;}
+
+/* ===== MC 物品槽位 ===== */
+.slot{width:52px;height:52px;background:#8b8b8b;border-radius:5px;position:relative;
+  border-top:3px solid #373737;border-left:3px solid #373737;
+  border-right:3px solid #ffffff;border-bottom:3px solid #ffffff;cursor:default;}
+.slot .px{position:absolute;inset:5px;display:flex;align-items:center;justify-content:center;}
+.slot .px img,.slot .px svg{width:100%;height:100%;image-rendering:pixelated;}
+.slot .amt{position:absolute;right:3px;bottom:1px;font-size:14px;font-weight:800;color:#fff;
+  text-shadow:1px 1px 0 #3f3f3f,2px 2px 0 #3f3f3f;font-family:"Courier New",monospace;z-index:2;}
+.slot .ph{font-family:"Courier New",monospace;font-weight:800;font-size:15px;color:#5a5a5a;text-shadow:1px 1px 0 #c6c6c6;}
+
+/* tooltip */
+.tooltip{position:fixed;z-index:200;background:rgba(16,4,32,.94);border:2px solid #2a0a50;
+  border-radius:4px;padding:7px 10px;font-family:"Courier New",monospace;font-size:13px;pointer-events:none;
+  max-width:280px;box-shadow:0 6px 20px rgba(0,0,0,.6);}
+.tooltip .tt-name{font-weight:800;margin-bottom:3px;}
+.tooltip .tt-lore{color:#a9a9a9;white-space:pre-line;}
+.tooltip .tt-extra{color:#754fd0;margin-top:3px;}
+
+footer{border-top:1px solid var(--line);padding:30px 0;text-align:center;color:var(--mut);font-size:13px;}
+footer b{color:var(--gold2);}
+
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);background:#1b2347;
+  border:1px solid var(--line);border-radius:12px;padding:13px 24px;font-size:14px;z-index:300;opacity:0;
+  transition:.25s;box-shadow:0 14px 40px rgba(0,0,0,.5);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:rgba(93,219,107,.5);} .toast.err{border-color:rgba(255,107,107,.5);}
+
+/* ===== 响应式 ===== */
+@media(max-width:760px){
+  .hero h1{font-size:31px;} .hero .gift{width:118px;height:118px;}
+  .tier-card{grid-template-columns:1fr;} .tier-badge{flex-direction:row;gap:16px;padding:18px;}
+  .tier-badge .ticon{width:60px;height:60px;} .tier-badge .tname{margin-top:0;}
+  .tier-body{border-left:none;border-top:1px solid var(--line);padding:20px;}
+  .elevator{right:12px;padding:9px 7px;} .nav-links a:not(.btn-admin){display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部导航 ===== -->
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32"><rect x="3" y="13" width="26" height="16" rx="2" fill="#c9821a"/><rect x="3" y="11" width="26" height="5" rx="2" fill="#ffb627"/><rect x="13" y="4" width="6" height="9" rx="1" fill="#ffe9a8"/><rect x="11" y="2" width="10" height="4" rx="2" fill="#ff6b6b"/></svg>
+      <div>SOYS 月卡中心<small>MONTHLY REWARDS</small></div>
+    </div>
+    <nav class="nav-links">
+      <a href="#floors">礼包档位</a>
+      <a href="#floors">领取说明</a>
+      <a class="btn-admin" href="admin.html">管理后台</a>
+    </nav>
+  </div>
+</div>
+
+<!-- ===== Hero ===== -->
+<header class="hero">
+  <div class="wrap">
+    <svg class="gift" viewBox="0 0 120 120">
+      <ellipse cx="60" cy="108" rx="42" ry="7" fill="rgba(0,0,0,.35)"/>
+      <rect x="24" y="52" width="72" height="52" rx="5" fill="#d8892a"/>
+      <rect x="24" y="52" width="72" height="12" fill="#f0a83e"/>
+      <rect x="54" y="52" width="12" height="52" fill="#ffe9a8"/>
+      <rect x="24" y="74" width="72" height="6" fill="rgba(0,0,0,.08)"/>
+      <path d="M60 52 C40 30 26 38 38 50 C46 57 56 54 60 52 Z" fill="#ff6b6b"/>
+      <path d="M60 52 C80 30 94 38 82 50 C74 57 64 54 60 52 Z" fill="#ff6b6b"/>
+      <circle cx="46" cy="40" r="3" fill="#fff" opacity=".8"/>
+      <circle cx="78" cy="66" r="2.5" fill="#fff" opacity=".7"/>
+      <circle cx="40" cy="84" r="2" fill="#fff" opacity=".6"/>
+    </svg>
+    <h1>每月月卡礼包</h1>
+    <p class="sub">登录游戏后，每月领取日即可在此查看并领取你的专属月卡福利</p>
+    <div class="meta-pills">
+      <div class="pill">当前月份 <b id="pill-month">—</b></div>
+      <div class="pill">每月 <b id="pill-day">—</b> 号起可领</div>
+      <div class="pill"><span class="dot" id="pill-dot"></span><span id="pill-time">检测中…</span></div>
+    </div>
+    <div class="scroll-hint">
+      <div class="mouse"></div>下滑选择你的月卡档位
+    </div>
+  </div>
+</header>
+
+<!-- ===== 电梯楼层 ===== -->
+<main class="wrap floors" id="floors">
+  <div id="floor-list"></div>
+</main>
+
+<!-- ===== 电梯侧边导航 ===== -->
+<div class="elevator" id="elevator" style="display:none;"><span class="rail"></span></div>
+
+<footer>
+  <p><b>SOYSMonthlyCard</b> · 由 SOYSHTTPOverMC 网页框架驱动 · 月卡福利每月刷新</p>
+</footer>
+
+<div class="tooltip" id="tooltip" style="display:none;"></div>
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+<script src="index.js"></script>
+</body>
+</html>

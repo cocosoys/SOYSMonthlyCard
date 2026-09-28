@@ -30,6 +30,7 @@ public final class SOYSMonthlyCard extends JavaPlugin {
     private StorageManager storageManager;
     private SOYSMonthlyCardAPI api;
     private AuditLogger auditLogger;
+    private soys.soysmonthlycard.web.MonthlyCardExpansion webExpansion;
 
     private FileConfiguration rewardsConfig;
     private FileConfiguration messagesConfig;
@@ -90,6 +91,9 @@ public final class SOYSMonthlyCard extends JavaPlugin {
         getCommand("monthlycard").setExecutor(cmd);
         getCommand("monthlycard").setTabCompleter(cmd);
 
+        // SOYSHTTPOverMC 网页扩展（可选依赖）：用户侧礼包页 + 管理员 ERP 后台
+        setupWebExpansion();
+
         getLogger().info("SOYSMonthlyCard 已启用 | 月卡领取日: 每月 "
                 + configManager.getClaimDay() + " 号起 | 主存储: "
                 + storageManager.getPrimary().getType().getDisplayName());
@@ -97,10 +101,32 @@ public final class SOYSMonthlyCard extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (webExpansion != null) {
+            webExpansion.unregister();
+            webExpansion = null;
+        }
         if (storageManager != null) {
             storageManager.shutdown();
         }
         getLogger().info("SOYSMonthlyCard 已禁用。");
+    }
+
+    /**
+     * 检测到 SOYSHTTPOverMC 已加载时，注册网页扩展（用户侧礼包页 + 管理 ERP）。
+     * 未安装框架则静默跳过，不影响插件核心功能。
+     */
+    private void setupWebExpansion() {
+        if (getServer().getPluginManager().getPlugin("SOYSHTTPOverMC") == null) {
+            getLogger().info("未检测到 SOYSHTTPOverMC，跳过网页界面注册（插件核心功能不受影响）。");
+            return;
+        }
+        webExpansion = new soys.soysmonthlycard.web.MonthlyCardExpansion(this);
+        if (webExpansion.register()) {
+            getLogger().info("网页用户中心与管理员 ERP 后台已注册到 SOYSHTTPOverMC。");
+        } else {
+            getLogger().warning("SOYSHTTPOverMC 网页扩展注册失败（identifier 冲突或框架未就绪）。");
+            webExpansion = null;
+        }
     }
 
     /** 重新加载外部配置文件（rewards.yml / message.yml），并自动补全缺失配置项 */

@@ -1,12 +1,9 @@
 package soys.soysmonthlycard.manager;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import soys.soysmonthlycard.SOYSMonthlyCard;
 import soys.soysmonthlycard.api.HookResult;
 import soys.soysmonthlycard.util.MessageUtil;
@@ -36,6 +33,16 @@ public class ClaimManager {
     private static final java.util.Map<String, String> MATERIAL_COMPAT = new java.util.HashMap<>();
     static {
         MATERIAL_COMPAT.put("TOTEM_OF_UNDYING", "TOTEM");
+    }
+
+    /**
+     * 查询高版本材质名对应的 1.12.2 材质名。
+     *
+     * @param upperName 大写材质名
+     * @return 兼容材质名；无需映射时返回 null
+     */
+    public static String compatMaterial(String upperName) {
+        return MATERIAL_COMPAT.get(upperName);
     }
 
     public ClaimManager(SOYSMonthlyCard plugin) {
@@ -103,7 +110,9 @@ public class ClaimManager {
             }
             String perm = tier.getString("permission", "");
             if (perm.isEmpty() || player.hasPermission(perm)) {
-                out.add(tierKey);
+                if (tier.getBoolean("enabled", true)) {
+                    out.add(tierKey);
+                }
             }
         }
         return out;
@@ -151,6 +160,9 @@ public class ClaimManager {
             if (!perm.isEmpty() && !player.hasPermission(perm)) {
                 continue; // 无该档位权限，跳过
             }
+            if (!tier.getBoolean("enabled", true)) {
+                continue; // 档位已被管理员禁用，跳过
+            }
             summary.eligibleTiers.add(tierKey);
 
             if (!claimTime) {
@@ -191,9 +203,47 @@ public class ClaimManager {
         return summary;
     }
 
+    /**
+     * 为玩家领取单个指定档位（管理端代领用）。
+     *
+     * @return null=领取成功；非空字符串=失败原因
+     */
+    public String claimSingle(Player player, String tierKey) {
+        ConfigurationSection tiers = plugin.getRewards().getConfigurationSection("tiers");
+        if (tiers == null) {
+            return "奖励配置缺失";
+        }
+        ConfigurationSection tier = tiers.getConfigurationSection(tierKey);
+        if (tier == null) {
+            return "档位不存在: " + tierKey;
+        }
+        String perm = tier.getString("permission", "");
+        if (!perm.isEmpty() && !player.hasPermission(perm)) {
+            return "玩家无该档位权限";
+        }
+        if (!tier.getBoolean("enabled", true)) {
+            return "该档位已被禁用";
+        }
+        if (!isClaimTime()) {
+            return "当前不在可领取时间段";
+        }
+        UUID uuid = player.getUniqueId();
+        String month = currentMonth();
+        if (hasClaimed(uuid, tierKey)) {
+            return "玩家本月已领取该档位";
+        }
+        HookResult hr = plugin.getApi().check(player, tierKey);
+        if (!hr.isAllowed()) {
+            return "被钩子拦截: " + hr.getReason();
+        }
+        grantTier(player, tier);
+        plugin.getStorage().markClaimed(uuid, tierKey, month);
+        plugin.getAuditLogger().logClaim(player, tierKey, month);
+        return null;
+    }
+
     /** 发放单个档位的奖励（money/points/items/commands） */
-    private void grantTier(Player player, ConfigurationSection tier) {
-        ConfigurationSection rw = tier.getConfigurationSection("rewards");
+    private void grantTier(Player player, ConfigurationSection tier) {        ConfigurationSection rw = tier.getConfigurationSection("rewards");
         if (rw == null) {
             return;
         }
@@ -213,72 +263,11 @@ public class ClaimManager {
             String parsed = MessageUtil.parse(player, cmd);
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), parsed);
         }
-        List<ItemStack> items = parseItems(rw.getMapList("items"));
+        List<ItemStack> items = soys.soysmonthlycard.web.ItemSerializer.toItems(
+                rw.getMapList("items"), plugin);
         if (!items.isEmpty()) {
             giveItems(player, items.toArray(new ItemStack[0]));
         }
-    }
-
-    /** 解析 items 列表为 ItemStack（支持 material/amount/data/name/lore/enchants） */
-    private List<ItemStack> parseItems(List<Map<?, ?>> raw) {
-        List<ItemStack> items = new ArrayList<>();
-        if (raw == null) {
-            return items;
-        }
-        for (Map<?, ?> map : raw) {
-            String matName = (String) map.get("material");
-            if (matName == null) {
-                continue;
-            }
-            // 1.12.2 兼容：先查高版本材质名映射
-            String compatName = MATERIAL_COMPAT.get(matName.toUpperCase());
-            if (compatName != null) {
-                matName = compatName;
-            }
-            Material material = Material.matchMaterial(matName);
-            if (material == null) {
-                plugin.getLogger().warning("rewards.yml 中存在未知材质: " + matName);
-                continue;
-            }
-            int amount = 1;
-            if (map.get("amount") != null) {
-                try {
-                    amount = Integer.parseInt(map.get("amount").toString());
-                } catch (NumberFormatException ignore) {
-                    amount = 1;
-                }
-            }
-            ItemStack is = new ItemStack(material, Math.max(1, amount));
-            if (map.get("data") != null) {
-                try {
-                    is.setDurability((short) Integer.parseInt(map.get("data").toString()));
-                } catch (NumberFormatException ignore) {
-                    // 忽略非法 data
-                }
-            }
-            ItemMeta meta = is.getItemMeta();
-            if (meta != null) {
-                if (map.get("name") != null) {
-                    meta.setDisplayName(MessageUtil.color(map.get("name").toString()));
-                }
-                if (map.get("lore") != null && map.get("lore") instanceof List) {
-                    meta.setLore(MessageUtil.colorList((List<String>) map.get("lore")));
-                }
-                if (map.get("enchants") != null && map.get("enchants") instanceof List) {
-                    for (Object e : (List<?>) map.get("enchants")) {
-                        String[] parts = e.toString().split(":");
-                        Enchantment ench = Enchantment.getByName(parts[0]);
-                        if (ench != null) {
-                            int level = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
-                            meta.addEnchant(ench, level, true);
-                        }
-                    }
-                }
-                is.setItemMeta(meta);
-            }
-            items.add(is);
-        }
-        return items;
     }
 
     /** 将物品发放到玩家背包，背包满则在脚下掉落 */

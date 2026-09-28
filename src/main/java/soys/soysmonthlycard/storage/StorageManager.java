@@ -467,6 +467,37 @@ public class StorageManager {
     }
 
     /**
+     * 重置（清除）某玩家某档位的领取记录，使其可再次领取。
+     *
+     * <p>同步更新缓存并阻塞持久化（管理端操作，需立即生效）；
+     * 若清除后记录为空，仍保留空记录文件结构。</p>
+     *
+     * @return true=该档位原本存在记录并已清除；false=本就无记录
+     */
+    public boolean resetTier(UUID uuid, String tier) {
+        ClaimRecord current = loadClaims(uuid);
+        if (current == null || current.getTier(tier) == null) {
+            return false;
+        }
+        ClaimRecord updated = new ClaimRecord(uuid, current.getTiers());
+        updated.removeTier(tier);
+        // 同步更新缓存（compute 原子操作）
+        cache.compute(uuid, (k, existing) -> {
+            ClaimRecord rec = existing != null ? existing : new ClaimRecord(uuid);
+            rec.removeTier(tier);
+            return rec;
+        });
+        ClaimRecord toSave = new ClaimRecord(updated.getUuid(), updated.getTiers());
+        try {
+            primary.save(toSave);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "重置档位后保存失败: " + e.getMessage(), e);
+        }
+        mirror(storage -> storage.save(toSave), "重置档位 " + uuid + "/" + tier);
+        return true;
+    }
+
+    /**
      * 把一次写操作镜像到所有辅助存储。
      */
     private void mirror(StorageAction action, String description) {
