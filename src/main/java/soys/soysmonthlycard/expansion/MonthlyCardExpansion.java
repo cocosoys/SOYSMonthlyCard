@@ -16,8 +16,8 @@ import java.util.List;
  * <p>由主类在检测到 SOYSHTTPOverMC 已加载时创建并 {@link #register()}：
  * 框架自动完成业务端点注册、{@code dist/} 页面托管（用户侧 + 管理 ERP）、CORS 与卸载。</p>
  *
- * <p>端点统一挂 {@code /api/plugins/soysmonthlycard} 前缀；
- * 页面托管于 {@code /web/plugins/soysmonthlycard}。</p>
+ * <p>端点统一挂 {@code /api/plugins/SOYSMonthlyCard} 前缀；
+ * 页面托管于 {@code /web/plugins/SOYSMonthlyCard}（与 web 工程 publicPath 一致）。</p>
  */
 public final class MonthlyCardExpansion extends SoysExpansion {
 
@@ -31,7 +31,7 @@ public final class MonthlyCardExpansion extends SoysExpansion {
 
     @Override
     public String getIdentifier() {
-        return "soysmonthlycard";
+        return "SOYSMonthlyCard";
     }
 
     @Override
@@ -60,7 +60,7 @@ public final class MonthlyCardExpansion extends SoysExpansion {
     @Override
     protected CorsSpec[] cors() {
         return new CorsSpec[]{
-                new CorsSpec("/api/plugins/soysmonthlycard", "*",
+                new CorsSpec("/api/plugins/SOYSMonthlyCard", "*",
                         "GET,POST,PUT,DELETE,OPTIONS", "*", false)
         };
     }
