@@ -1,4 +1,4 @@
-package soys.soysmonthlycard.web;
+package soys.soysmonthlycard.expansion;
 
 import com.github.cocosoys.mc.soyshttpovermc.annotations.ApiName;
 import com.github.cocosoys.mc.soyshttpovermc.annotations.GetMapping;
