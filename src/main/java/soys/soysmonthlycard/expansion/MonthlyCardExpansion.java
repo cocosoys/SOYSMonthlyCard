@@ -5,6 +5,7 @@ import com.github.cocosoys.mc.soyshttpovermc.annotations.GetMapping;
 import com.github.cocosoys.mc.soyshttpovermc.api.SoysExpansion;
 import com.github.cocosoys.mc.soyshttpovermc.util.AjaxResult;
 import soys.soysmonthlycard.SOYSMonthlyCard;
+import soys.soysmonthlycard.spring.controller.MonthlyCardController;
 
 import java.util.Arrays;
 import java.util.List;

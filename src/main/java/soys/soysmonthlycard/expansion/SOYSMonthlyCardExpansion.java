@@ -124,7 +124,7 @@ public class SOYSMonthlyCardExpansion extends PlaceholderExpansion {
     private String formatTop() {
         Map<UUID, List<String>> claims = plugin.getStorage().getClaimsThisMonth();
         if (claims.isEmpty()) {
-            return plugin.getMessages().getString("top-empty", "暂无");
+            return plugin.getMessages().getString("soysmonthlycard.command.top.empty", "暂无");
         }
         StringBuilder sb = new StringBuilder();
         int rank = 0;

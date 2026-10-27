@@ -3,6 +3,8 @@ package soys.soysmonthlycard;
 import net.milkbowl.vault.economy.Economy;
 import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.PlayerPointsAPI;
+import com.github.cocosoys.mc.soyshttpovermc.i18n.I18n;
+import com.github.cocosoys.mc.soyshttpovermc.spi.Platforms;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -11,6 +13,8 @@ import soys.soysmonthlycard.api.SOYSMonthlyCardAPI;
 import soys.soysmonthlycard.command.MonthlyCardCommand;
 import soys.soysmonthlycard.config.ConfigManager;
 import soys.soysmonthlycard.config.ConfigMigrator;
+import soys.soysmonthlycard.erp.MonthlyCardErpExpansion;
+import soys.soysmonthlycard.expansion.MonthlyCardExpansion;
 import soys.soysmonthlycard.expansion.SOYSMonthlyCardExpansion;
 import soys.soysmonthlycard.listener.JoinListener;
 import soys.soysmonthlycard.manager.ClaimManager;
@@ -30,7 +34,8 @@ public final class SOYSMonthlyCard extends JavaPlugin {
     private StorageManager storageManager;
     private SOYSMonthlyCardAPI api;
     private AuditLogger auditLogger;
-    private soys.soysmonthlycard.web.MonthlyCardExpansion webExpansion;
+    private MonthlyCardExpansion webExpansion;
+    private MonthlyCardErpExpansion erpExpansion;
 
     private FileConfiguration rewardsConfig;
     private FileConfiguration messagesConfig;
@@ -42,11 +47,13 @@ public final class SOYSMonthlyCard extends JavaPlugin {
         // 保存默认配置文件（仅首次）
         saveDefaultConfig();
         saveResourceIfAbsent("rewards.yml");
-        saveResourceIfAbsent("message.yml");
+        // 语言包（language/zh_cn.yml、language/en_us.yml，文件名即语言代码，与 SOYSHTTPOverMC 约定一致）
+        saveResourceIfAbsent("language/zh_cn.yml");
+        saveResourceIfAbsent("language/en_us.yml");
 
         // 配置访问器（含 Bukkit config.yml 重载）
         this.configManager = new ConfigManager(this);
-        // 加载 rewards.yml / message.yml
+        // 加载 rewards.yml / 语言包
         reloadConfigFiles();
 
         // 三大强制依赖初始化
@@ -94,6 +101,12 @@ public final class SOYSMonthlyCard extends JavaPlugin {
         // SOYSHTTPOverMC 网页扩展（可选依赖）：用户侧礼包页 + 管理员 ERP 后台
         setupWebExpansion();
 
+        // 语言包注册为 SOYSHTTPOverMC 语言源（可选依赖）：让 /soyshttp lang 等框架能力可识别
+        setupLanguageSource();
+
+        // MCERP 统一 ERP 控制台模块（可选依赖，需 SOYSHTTPOverMC 的页面与端点能力）
+        setupErpExpansion();
+
         getLogger().info("SOYSMonthlyCard 已启用 | 月卡领取日: 每月 "
                 + configManager.getClaimDay() + " 号起 | 主存储: "
                 + storageManager.getPrimary().getType().getDisplayName());
@@ -101,6 +114,10 @@ public final class SOYSMonthlyCard extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (erpExpansion != null) {
+            erpExpansion.unregister();
+            erpExpansion = null;
+        }
         if (webExpansion != null) {
             webExpansion.unregister();
             webExpansion = null;
@@ -112,6 +129,22 @@ public final class SOYSMonthlyCard extends JavaPlugin {
     }
 
     /**
+     * 检测到 SOYSHTTPOverMC 已加载时，将语言包注册为框架语言源。
+     * 未安装框架则静默跳过（本插件自身仍独立加载 language/ 语言包）。
+     */
+    private void setupLanguageSource() {
+        if (getServer().getPluginManager().getPlugin("SOYSHTTPOverMC") == null) {
+            return;
+        }
+        try {
+            soys.soysmonthlycard.i18n.SoysI18n.register(this);
+            getLogger().info("语言包已注册为 SOYSHTTPOverMC 语言源（/soyshttp lang sources 可查看）。");
+        } catch (Throwable t) {
+            getLogger().warning("注册 SOYSHTTPOverMC 语言源失败（不影响插件核心功能）: " + t);
+        }
+    }
+
+    /**
      * 检测到 SOYSHTTPOverMC 已加载时，注册网页扩展（用户侧礼包页 + 管理 ERP）。
      * 未安装框架则静默跳过，不影响插件核心功能。
      */
@@ -120,7 +153,7 @@ public final class SOYSMonthlyCard extends JavaPlugin {
             getLogger().info("未检测到 SOYSHTTPOverMC，跳过网页界面注册（插件核心功能不受影响）。");
             return;
         }
-        webExpansion = new soys.soysmonthlycard.web.MonthlyCardExpansion(this);
+        webExpansion = new MonthlyCardExpansion(this);
         if (webExpansion.register()) {
             getLogger().info("网页用户中心与管理员 ERP 后台已注册到 SOYSHTTPOverMC。");
         } else {
@@ -129,19 +162,65 @@ public final class SOYSMonthlyCard extends JavaPlugin {
         }
     }
 
-    /** 重新加载外部配置文件（rewards.yml / message.yml），并自动补全缺失配置项 */
+    /**
+     * 检测到 MCERP 已加载时，注册月卡管理 ERP 模块（统一控制台侧边栏入口）。
+     *
+     * <p>MCERP 与 SOYSHTTPOverMC 均为可选依赖：
+     * ① 任一缺失静默跳过；② MCERP 存在但类不可加载（版本不匹配）时按异常兜底，
+     * 不影响插件核心领取功能。</p>
+     */
+    private void setupErpExpansion() {
+        if (getServer().getPluginManager().getPlugin("SOYSHTTPOverMC") == null
+                || getServer().getPluginManager().getPlugin("MCERP") == null) {
+            getLogger().info("未检测到 MCERP（或缺少 SOYSHTTPOverMC），跳过 ERP 模块注册。");
+            return;
+        }
+        try {
+            erpExpansion = new MonthlyCardErpExpansion(this);
+            if (erpExpansion.register()) {
+                getLogger().info("月卡管理 ERP 模块已注册到 MCERP。");
+            } else {
+                getLogger().warning("MCERP 月卡模块注册失败（identifier 冲突或 ERP 未就绪）。");
+                erpExpansion = null;
+            }
+        } catch (Throwable t) {
+            getLogger().warning("MCERP 月卡模块注册异常，已跳过: " + t);
+            erpExpansion = null;
+        }
+    }
+
+    /** 重新加载外部配置文件（rewards.yml / language 语言包），并自动补全缺失配置项 */
     public void reloadConfigFiles() {
         ConfigMigrator.migrate(this, new File(getDataFolder(), "rewards.yml"),
                 "rewards.yml", ConfigMigrator.REWARDS_VERSION);
-        ConfigMigrator.migrate(this, new File(getDataFolder(), "message.yml"),
-                "message.yml", ConfigMigrator.MESSAGE_VERSION);
         reloadExternalFiles();
     }
 
-    /** 重新加载外部配置文件（rewards.yml / message.yml） */
+    /** 重新加载外部配置文件（rewards.yml / language 语言包） */
     public void reloadExternalFiles() {
         rewardsConfig = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "rewards.yml"));
-        messagesConfig = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "message.yml"));
+        // 语言包按 <dataFolder>/language/<语言代码>.yml 约定加载（文件名即语言代码，与 SOYSHTTPOverMC 一致）
+        String code = getLanguageCode();
+        File langFile = new File(getDataFolder(), "language" + File.separator + code + ".yml");
+        if (!langFile.isFile()) {
+            // 兼容旧版 message.yml：语言包缺失时回退旧文件并提示迁移
+            File legacy = new File(getDataFolder(), "message.yml");
+            if (legacy.isFile()) {
+                getLogger().warning("未找到语言包 " + langFile.getName() + "，已回退加载旧 message.yml（建议迁移至 language/ 目录）。");
+                messagesConfig = YamlConfiguration.loadConfiguration(legacy);
+            } else {
+                getLogger().warning("语言包 " + langFile.getName() + " 不存在，消息将使用内置兜底文案。");
+                messagesConfig = new YamlConfiguration();
+            }
+            return;
+        }
+        messagesConfig = YamlConfiguration.loadConfiguration(langFile);
+    }
+
+    /** 当前语言代码（小写，缺省 zh_cn），来源：config.yml settings.language */
+    public String getLanguageCode() {
+        String lang = configManager.getLanguage();
+        return (lang == null || lang.trim().isEmpty()) ? "zh_cn" : lang.trim().toLowerCase();
     }
 
     /** 重载后重建审计日志（使 settings.audit 配置立即生效） */

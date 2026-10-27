@@ -1,0 +1,44 @@
+# ============================================================
+# SOYSMonthlyCard 语言包（简体中文）
+# 由主插件 SOYSHTTPOverMC 的 I18n 机制加载/识别：
+#   SOYSMonthlyCard.onEnable → I18n.registerLanguageSource(...)
+# key 统一 soysmonthlycard. 前缀（插件名小写，避免与其他插件键冲突）
+# 占位符：{0} {1} ...（与 I18n.t 的 args 对应）
+# 颜色码：直接书写 §（§a/§c/§e/§f/§7 等）
+# ============================================================
+
+# ---------- 通用 ----------
+soysmonthlycard.common.no-permission: "§c你没有权限领取任何月卡档位。"
+soysmonthlycard.common.plugin-reload: "§aSOYSMonthlyCard 配置已重载。"
+soysmonthlycard.common.dependency-missing: "§c依赖缺失：{0}，插件无法正常运行。"
+soysmonthlycard.common.storage-mysql-failed: "§cMySQL 连接失败，已回退到 YAML 存储。"
+
+# ---------- 领取 ----------
+soysmonthlycard.claim.not-claimed-yet: "§c本月尚未到领取时间（每月 {0} 号之后才可领取）。"
+soysmonthlycard.claim.already-claimed: "§c你本月可领取的月卡档位都已领取过了。"
+soysmonthlycard.claim.success: "§a领取成功！已领取档位：§e{0}"
+soysmonthlycard.claim.offline-compensated: "§a离线补发成功！已领取档位：§e{0}"
+soysmonthlycard.claim.broadcast: "§e{0} §a领取了月卡档位：§e{1}"
+soysmonthlycard.claim.blocked: "§c档位 {0} 被拦截，无法领取：{1}"
+
+# ---------- 查询 /monthlycard info ----------
+soysmonthlycard.command.info.header: "§a===== 我的月卡领取状态 ====="
+soysmonthlycard.command.info.month: "§7当前月份: §f{0}"
+soysmonthlycard.command.info.claim-day: "§7每月可领取日: §f{0}§7 号起"
+soysmonthlycard.command.info.tier: "§7- §f{0}§7: {1} §7(上次: {2})"
+soysmonthlycard.command.info.status.no-permission: "§c无权限"
+soysmonthlycard.command.info.status.claimed: "§a已领取"
+soysmonthlycard.command.info.status.available: "§e可领取"
+soysmonthlycard.command.info.status.locked: "§7未到时间"
+soysmonthlycard.command.info.note: "§7使用 /monthlycard 领取"
+
+# ---------- 排行榜 /monthlycard top ----------
+soysmonthlycard.command.top.header: "§a===== 本月月卡领取排行榜 (共 §f{0}§a 人) ====="
+soysmonthlycard.command.top.empty: "§7暂无玩家领取。"
+soysmonthlycard.command.top.line: "§7#{0} §f{1} §7档位: {2}"
+
+# ---------- 数据迁移 /monthlycard migrate ----------
+soysmonthlycard.command.migrate.start: "§a开始迁移数据：从 {0} 到 {1} …"
+soysmonthlycard.command.migrate.done: "§a数据迁移完成：共处理 §f{0}§a 名玩家。"
+soysmonthlycard.command.migrate.unknown: "§c未知迁移方向: {0}"
+soysmonthlycard.command.migrate.backend-disabled: "§c存储后端 {0} 未启用，无法执行迁移。"

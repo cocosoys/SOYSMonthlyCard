@@ -14,7 +14,7 @@
   <properties>
     <java.version>1.8</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <soys.version>1.4.0</soys.version>
+    <soys.version>1.4.1</soys.version>
   </properties>
 
   <build>
@@ -130,6 +130,16 @@
       <version>${soys.version}</version>
       <scope>system</scope>
       <systemPath>${project.basedir}/../SOYSHTTPOverMC/core/target/SOYSHTTPOverMC-1_12-${soys.version}.jar</systemPath>
+    </dependency>
+
+    <!-- MCERP 统一 ERP 中控：运行时由服务端提供（softdepend），编译期引用其构建产物。
+         用于本插件的 ERP 扩展模块（erp.MonthlyCardErpExpansion extends McerpExpansion）。 -->
+    <dependency>
+      <groupId>com.github.cocosoys.mc</groupId>
+      <artifactId>MCERP</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/../MCERP/target/MCERP-1.0-SNAPSHOT.jar</systemPath>
     </dependency>
 
     <!--

@@ -1,0 +1,44 @@
+# ============================================================
+# SOYSMonthlyCard language pack (English)
+# Loaded/recognized by the SOYSHTTPOverMC I18n mechanism:
+#   SOYSMonthlyCard.onEnable → I18n.registerLanguageSource(...)
+# All keys share the soysmonthlycard. prefix (lowercased plugin name)
+# Placeholders: {0} {1} ... (matched to the args of I18n.t)
+# Color codes: written directly with § (§a/§c/§e/§f/§7 etc.)
+# ============================================================
+
+# ---------- Common ----------
+soysmonthlycard.common.no-permission: "§cYou don't have permission to claim any monthly card tier."
+soysmonthlycard.common.plugin-reload: "§aSOYSMonthlyCard configuration reloaded."
+soysmonthlycard.common.dependency-missing: "§cMissing dependency: {0}. Plugin cannot run properly."
+soysmonthlycard.common.storage-mysql-failed: "§cMySQL connection failed, fell back to YAML storage."
+
+# ---------- Claim ----------
+soysmonthlycard.claim.not-claimed-yet: "§cIt's not claim time yet this month (claimable after the {0})."
+soysmonthlycard.claim.already-claimed: "§cYou have already claimed all available monthly card tiers this month."
+soysmonthlycard.claim.success: "§aClaimed successfully! Tier(s): §e{0}"
+soysmonthlycard.claim.offline-compensated: "§aOffline compensation granted! Tier(s): §e{0}"
+soysmonthlycard.claim.broadcast: "§e{0} §aclaimed the monthly card tier: §e{1}"
+soysmonthlycard.claim.blocked: "§cTier {0} was blocked and cannot be claimed: {1}"
+
+# ---------- Query /monthlycard info ----------
+soysmonthlycard.command.info.header: "§a===== My Monthly Card Claim Status ====="
+soysmonthlycard.command.info.month: "§7Current month: §f{0}"
+soysmonthlycard.command.info.claim-day: "§7Monthly claim day: from the §f{0}§7"
+soysmonthlycard.command.info.tier: "§7- §f{0}§7: {1} §7(last: {2})"
+soysmonthlycard.command.info.status.no-permission: "§cNo permission"
+soysmonthlycard.command.info.status.claimed: "§aClaimed"
+soysmonthlycard.command.info.status.available: "§eAvailable"
+soysmonthlycard.command.info.status.locked: "§7Not yet"
+soysmonthlycard.command.info.note: "§7Use /monthlycard to claim"
+
+# ---------- Leaderboard /monthlycard top ----------
+soysmonthlycard.command.top.header: "§a===== Monthly Card Claim Leaderboard (§f{0}§a players) ====="
+soysmonthlycard.command.top.empty: "§7No players have claimed yet."
+soysmonthlycard.command.top.line: "§7#{0} §f{1} §7tier: {2}"
+
+# ---------- Data migration /monthlycard migrate ----------
+soysmonthlycard.command.migrate.start: "§aStarting data migration: from {0} to {1} …"
+soysmonthlycard.command.migrate.done: "§aMigration completed: §f{0}§a players processed."
+soysmonthlycard.command.migrate.unknown: "§cUnknown migration direction: {0}"
+soysmonthlycard.command.migrate.backend-disabled: "§cStorage backend {0} is not enabled and cannot be migrated."

@@ -13,13 +13,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
 /**
- * 配置文件版本迁移：在 reload 时若 rewards.yml / message.yml 的 config-version 低于当前版本，
+ * 配置文件版本迁移：在 reload 时若 rewards.yml 的 config-version 低于当前版本，
  * 则从插件 jar 内的默认文件补全缺失的配置项（不覆盖用户已有值），并写回 config-version。
+ *
+ * <p>语言包（language/*.yml）为键值型提示语，不做版本迁移——
+ * 缺失的 key 由调用方以 fallback 兜底（与 SOYSHTTPOverMC 语言源回退语义一致）。</p>
  */
 public final class ConfigMigrator {
 
     public static final int REWARDS_VERSION = 1;
-    public static final int MESSAGE_VERSION = 1;
 
     private ConfigMigrator() {
     }

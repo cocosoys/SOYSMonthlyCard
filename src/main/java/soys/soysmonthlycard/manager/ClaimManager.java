@@ -295,13 +295,12 @@ public class ClaimManager {
             case SUCCESS: {
                 String tiers = String.join(", ", summary.claimedTiers);
                 String key = (auto && plugin.getConfigManager().isOfflineCompensation())
-                        ? "offline-compensated" : "claimed";
-                String m = msg.getString(key, "&a领取成功！已领取档位：&e%tiers%");
-                m = m.replace("%tiers%", tiers);
+                        ? "soysmonthlycard.claim.offline-compensated" : "soysmonthlycard.claim.success";
+                String m = MessageUtil.format(msg.getString(key, "§a领取成功！已领取档位：§e{0}"), tiers);
                 MessageUtil.tellParsed(player, m);
-                String bc = msg.getString("claimed-broadcast", "");
+                String bc = msg.getString("soysmonthlycard.claim.broadcast", "");
                 if (bc != null && !bc.isEmpty()) {
-                    bc = bc.replace("%tiers%", tiers);
+                    bc = MessageUtil.format(bc, player.getName(), tiers);
                     Bukkit.broadcastMessage(MessageUtil.parse(player, bc));
                 }
                 if (!summary.blockedTiers.isEmpty()) {
@@ -310,16 +309,19 @@ public class ClaimManager {
                 break;
             }
             case NO_PERMISSION:
-                MessageUtil.tell(player, msg.getString("no-permission", "&c无权限。"));
+                MessageUtil.tell(player, msg.getString("soysmonthlycard.common.no-permission", "§c无权限。"));
                 break;
             case NOT_CLAIM_TIME: {
-                String m = msg.getString("not-claimed-yet", "&c本月尚未到领取时间（每月 %claim_day% 号之后才可领取）。");
-                m = m.replace("%claim_day%", String.valueOf(plugin.getConfigManager().getClaimDay()));
+                String m = MessageUtil.format(
+                        msg.getString("soysmonthlycard.claim.not-claimed-yet",
+                                "§c本月尚未到领取时间（每月 {0} 号之后才可领取）。"),
+                        plugin.getConfigManager().getClaimDay());
                 MessageUtil.tellParsed(player, m);
                 break;
             }
             case ALREADY_CLAIMED:
-                MessageUtil.tell(player, msg.getString("already-claimed", "&c你本月可领取的月卡档位都已领取过了。"));
+                MessageUtil.tell(player, msg.getString("soysmonthlycard.claim.already-claimed",
+                        "§c你本月可领取的月卡档位都已领取过了。"));
                 break;
             case BLOCKED:
                 sendBlocked(player, summary);
@@ -334,9 +336,9 @@ public class ClaimManager {
 
     private void sendBlocked(Player player, ClaimSummary summary) {
         org.bukkit.configuration.file.FileConfiguration msg = plugin.getMessages();
-        String m = msg.getString("claim-blocked", "&c档位 %tiers% 被拦截，无法领取：%reason%");
-        m = m.replace("%tiers%", String.join(", ", summary.blockedTiers))
-                .replace("%reason%", summary.blockReason);
+        String m = MessageUtil.format(
+                msg.getString("soysmonthlycard.claim.blocked", "§c档位 {0} 被拦截，无法领取：{1}"),
+                String.join(", ", summary.blockedTiers), summary.blockReason);
         MessageUtil.tellParsed(player, m);
     }
 }

@@ -37,7 +37,7 @@ public class ConfigManager {
     }
 
     public String getLanguage() {
-        return config.getString("settings.language", "zh_CN");
+        return config.getString("settings.language", "zh_cn");
     }
 
     /** 每月几号（含）之后可领取 */

@@ -48,14 +48,14 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
             String sub = args[0].toLowerCase();
             if (sub.equals("reload")) {
                 if (!sender.hasPermission("soysmonthlycard.admin")) {
-                    MessageUtil.tell(sender, plugin.getMessages().getString("no-permission", "&c无权限。"));
+                    MessageUtil.tell(sender, plugin.getMessages().getString("soysmonthlycard.common.no-permission", "§c无权限。"));
                     return true;
                 }
                 plugin.getConfigManager().reload();
                 plugin.reloadConfigFiles();
                 plugin.reloadAuditLogger();
                 plugin.getStorage().initialize();
-                MessageUtil.tell(sender, plugin.getMessages().getString("plugin-reload", "&a配置已重载。"));
+                MessageUtil.tell(sender, plugin.getMessages().getString("soysmonthlycard.common.plugin-reload", "§a配置已重载。"));
                 return true;
             }
             if (sub.equals("migrate")) {
@@ -92,12 +92,12 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
         String month = claimManager.currentMonth();
         int claimDay = plugin.getConfigManager().getClaimDay();
 
-        MessageUtil.tell(player, msg.getString("info-header", "&a===== 我的月卡领取状态 ====="));
-        MessageUtil.tell(player,
-                msg.getString("info-month", "&7当前月份: &f%month%").replace("%month%", month));
-        MessageUtil.tell(player,
-                msg.getString("info-claim-day", "&7每月可领取日: &f%claim_day% 号起")
-                        .replace("%claim_day%", String.valueOf(claimDay)));
+        MessageUtil.tell(player, msg.getString("soysmonthlycard.command.info.header", "§a===== 我的月卡领取状态 ====="));
+        MessageUtil.tell(player, MessageUtil.format(
+                msg.getString("soysmonthlycard.command.info.month", "§7当前月份: §f{0}"), month));
+        MessageUtil.tell(player, MessageUtil.format(
+                msg.getString("soysmonthlycard.command.info.claim-day", "§7每月可领取日: §f{0}§7 号起"),
+                claimDay));
 
         org.bukkit.configuration.ConfigurationSection tiers = rewards.getConfigurationSection("tiers");
         if (tiers != null) {
@@ -109,23 +109,22 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
 
                 String status;
                 if (!hasPerm) {
-                    status = msg.getString("info-status-no-perm", "&c无权限");
+                    status = msg.getString("soysmonthlycard.command.info.status.no-permission", "§c无权限");
                 } else if (claimed) {
-                    status = msg.getString("info-status-claimed", "&a已领取");
+                    status = msg.getString("soysmonthlycard.command.info.status.claimed", "§a已领取");
                 } else if (claimManager.isClaimTime()) {
-                    status = msg.getString("info-status-available", "&e可领取");
+                    status = msg.getString("soysmonthlycard.command.info.status.available", "§e可领取");
                 } else {
-                    status = msg.getString("info-status-locked", "&7未到时间");
+                    status = msg.getString("soysmonthlycard.command.info.status.locked", "§7未到时间");
                 }
 
-                String line = msg.getString("info-tier", "&7- &f%tier%&7: %status% &7(上次: %last%)")
-                        .replace("%tier%", tierKey)
-                        .replace("%status%", status)
-                        .replace("%last%", last == null ? "-" : last);
+                String line = MessageUtil.format(
+                        msg.getString("soysmonthlycard.command.info.tier", "§7- §f{0}§7: {1} §7(上次: {2})"),
+                        tierKey, status, last == null ? "-" : last);
                 MessageUtil.tell(player, line);
             }
         }
-        MessageUtil.tell(player, msg.getString("info-note", "&7使用 /monthlycard 领取"));
+        MessageUtil.tell(player, msg.getString("soysmonthlycard.command.info.note", "§7使用 /monthlycard 领取"));
     }
 
     /** 查看本月已领取排行榜 */
@@ -134,12 +133,12 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
         StorageManager storage = plugin.getStorage();
         Map<UUID, List<String>> claims = storage.getClaimsThisMonth();
 
-        MessageUtil.tell(sender,
-                msg.getString("top-header", "&a===== 本月月卡领取排行榜 (共 %count% 人) =====")
-                        .replace("%count%", String.valueOf(claims.size())));
+        MessageUtil.tell(sender, MessageUtil.format(
+                msg.getString("soysmonthlycard.command.top.header", "§a===== 本月月卡领取排行榜 (共 §f{0}§a 人) ====="),
+                claims.size()));
 
         if (claims.isEmpty()) {
-            MessageUtil.tell(sender, msg.getString("top-empty", "&7暂无玩家领取。"));
+            MessageUtil.tell(sender, msg.getString("soysmonthlycard.command.top.empty", "§7暂无玩家领取。"));
             return;
         }
 
@@ -148,28 +147,28 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
             rank++;
             OfflinePlayer op = Bukkit.getOfflinePlayer(entry.getKey());
             String name = op.getName() != null ? op.getName() : entry.getKey().toString();
-            String line = msg.getString("top-line", "&7#%rank% &f%player% &7档位: %tiers%")
-                    .replace("%rank%", String.valueOf(rank))
-                    .replace("%player%", name)
-                    .replace("%tiers%", String.join(", ", entry.getValue()));
+            String line = MessageUtil.format(
+                    msg.getString("soysmonthlycard.command.top.line", "§7#{0} §f{1} §7档位: {2}"),
+                    rank, name, String.join(", ", entry.getValue()));
             MessageUtil.tell(sender, line);
         }
     }
 
     private boolean handleMigrate(CommandSender sender, String[] args) {
         if (!sender.hasPermission("soysmonthlycard.admin")) {
-            MessageUtil.tell(sender, plugin.getMessages().getString("no-permission", "&c无权限。"));
+            MessageUtil.tell(sender, plugin.getMessages().getString("soysmonthlycard.common.no-permission", "§c无权限。"));
             return true;
         }
         if (args.length < 2) {
-            MessageUtil.tell(sender, "&c用法: /monthlycard migrate <mysql2yaml|yaml2mysql|sqlite2mysql|...>");
+            MessageUtil.tell(sender, "§c用法: /monthlycard migrate <mysql2yaml|yaml2mysql|sqlite2mysql|...>");
             return true;
         }
         String dir = args[1].toLowerCase();
         int sep = dir.indexOf('2');
         if (sep <= 0 || sep == dir.length() - 1) {
-            MessageUtil.tell(sender, plugin.getMessages().getString("migrate-unknown", "&c未知迁移方向: %dir%")
-                    .replace("%dir%", dir));
+            MessageUtil.tell(sender, MessageUtil.format(
+                    plugin.getMessages().getString("soysmonthlycard.command.migrate.unknown", "§c未知迁移方向: {0}"),
+                    dir));
             return true;
         }
         String fromId = dir.substring(0, sep);
@@ -177,22 +176,25 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
         StorageType from = StorageType.fromId(fromId);
         StorageType to = StorageType.fromId(toId);
         if (from == null || to == null || from == to) {
-            MessageUtil.tell(sender, plugin.getMessages().getString("migrate-unknown", "&c未知迁移方向: %dir%")
-                    .replace("%dir%", dir));
+            MessageUtil.tell(sender, MessageUtil.format(
+                    plugin.getMessages().getString("soysmonthlycard.command.migrate.unknown", "§c未知迁移方向: {0}"),
+                    dir));
             return true;
         }
 
         StorageManager storage = plugin.getStorage();
         if (!storage.isEnabled(from) || !storage.isEnabled(to)) {
-            MessageUtil.tell(sender, plugin.getMessages().getString("migrate-backend-disabled",
-                    "&c存储后端 %type% 未启用，无法执行迁移。")
-                    .replace("%type%", from.getDisplayName() + " / " + to.getDisplayName()));
+            MessageUtil.tell(sender, MessageUtil.format(
+                    plugin.getMessages().getString("soysmonthlycard.command.migrate.backend-disabled",
+                            "§c存储后端 {0} 未启用，无法执行迁移。"),
+                    from.getDisplayName() + " / " + to.getDisplayName()));
             return true;
         }
 
         FileConfiguration msg = plugin.getMessages();
-        MessageUtil.tell(sender, msg.getString("migrate-start", "&a开始迁移数据：从 %from% 到 %to% …")
-                .replace("%from%", from.getDisplayName()).replace("%to%", to.getDisplayName()));
+        MessageUtil.tell(sender, MessageUtil.format(
+                msg.getString("soysmonthlycard.command.migrate.start", "§a开始迁移数据：从 {0} 到 {1} …"),
+                from.getDisplayName(), to.getDisplayName()));
 
         int count;
         try {
@@ -200,11 +202,12 @@ public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
             count = storage.migrate(from, to, true);
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "数据迁移失败", e);
-            MessageUtil.tell(sender, "&c迁移失败: " + e.getMessage());
+            MessageUtil.tell(sender, "§c迁移失败: " + e.getMessage());
             return true;
         }
-        MessageUtil.tell(sender, msg.getString("migrate-done", "&a数据迁移完成：共处理 %count% 名玩家。")
-                .replace("%count%", String.valueOf(count)));
+        MessageUtil.tell(sender, MessageUtil.format(
+                msg.getString("soysmonthlycard.command.migrate.done", "§a数据迁移完成：共处理 §f{0}§a 名玩家。"),
+                count));
         return true;
     }
 
