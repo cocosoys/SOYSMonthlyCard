@@ -60,7 +60,7 @@ public final class MonthlyCardErpExpansion extends McerpExpansion {
     /** 模块 id：同时决定路由前缀 {@code /soysmonthlycarderp} 与页面目录名（NameSafe）。 */
     @Override
     public String getIdentifier() {
-        return "soysmonthlycard-erp";
+        return "SOYSMonthlyCard-ERP";
     }
 
     @Override
