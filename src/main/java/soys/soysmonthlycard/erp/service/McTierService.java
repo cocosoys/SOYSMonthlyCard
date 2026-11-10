@@ -2,6 +2,7 @@ package soys.soysmonthlycard.erp.service;
 
 import com.github.cocosoys.mc.soyshttpovermc.util.AjaxResult;
 import com.github.cocosoys.mc.soyshttpovermc.util.TableDataInfo;
+import com.github.cocosoys.mc.soyshttpovermc.web.ApiRequestContext;
 import soys.soysmonthlycard.erp.entity.vo.McTierSaveVO;
 
 /**
@@ -23,4 +24,10 @@ public interface McTierService {
 
     /** 启用/禁用档位。 */
     AjaxResult toggle(String tierKey);
+
+    /** 档位页概览（复用统计视图，权限按 tier:list 放行）。 */
+    AjaxResult summary();
+
+    /** 读取当前操作者背包（用于从背包导入物品，操作者需在线）。 */
+    AjaxResult operatorInventory(ApiRequestContext ctx);
 }

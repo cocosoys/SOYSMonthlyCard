@@ -8,7 +8,7 @@
       </app-link>
     </template>
 
-    <el-submenu v-else ref="subMenu" :index="resolvePath(item.path)" popper-append-to-body>
+    <el-submenu v-else ref="subMenu" :index="submenuIndex" popper-append-to-body>
       <template slot="title">
         <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
       </template>
@@ -53,6 +53,15 @@ export default {
   data() {
     this.onlyOneChild = null
     return {}
+  },
+  computed: {
+    // 目录节点用自身完整路径作为唯一 index。
+    // 不能用 resolvePath(item.path)：当目录与某个叶子同名时（如 dir 下的菜单与目录同名），
+    // submenu 与 menu-item 的 index 会撞成同一个值，导致 el-menu 的展开 / 高亮状态异常。
+    // basePath 由父级按层级 resolve 得出，天然唯一。
+    submenuIndex() {
+      return this.basePath || this.resolvePath(this.item.path)
+    }
   },
   methods: {
     hasOneShowingChild(children = [], parent) {

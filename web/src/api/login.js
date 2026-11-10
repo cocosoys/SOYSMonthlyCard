@@ -1,25 +1,25 @@
 import request from '@/utils/request'
+import soysContext from '@/soys/context'
 
 /**
- * SOYS 主插件自带 auth 基址：契约 apiPrefix（/api）+ /auth。
- * 登录/登出/会话完全交给主插件，不再走 MCERP 自建 auth（captchaImage/login/logout 已废弃）。
+ * 独立访问模式的登录 / 鉴权。
+ *
+ * - 登录 / 登出走 SOYS 主插件自带 auth：契约 apiPrefix + /auth/*，无兜底。
+ * - getInfo 走 MCERP 宿主命名空间，取沿用契约的 user / roles / permissions。
+ *
+ * 已知限制：契约 pluginsPrefix 指向 owner = 本插件，并未暴露「宿主插件标识」字段，
+ * 因此 HOST_PLUGIN_ID 是前端唯一残留的跨插件硬编码常量；其中 /api 段仍从契约 apiPrefix
+ * 取得（改 api-prefix 不会失效）。若后续契约补充该字段，这里应改为直接读取。
  */
-function soysApi() {
-  const ctx = (typeof window !== 'undefined' && window.SOYS_CONTEXT) || null
-  return (ctx && ctx.apiPrefix) || '/api'
-}
+const HOST_PLUGIN_ID = 'MCERP'
+// 导出供 api/menu.js 复用：getRouters 与 getInfo 同属 MCERP 命名空间，
+// 不新增第二份跨插件硬编码（契约未提供宿主插件标识字段）。
+export const MCERP_HOST_API = soysContext.apiPrefix + '/plugins/' + HOST_PLUGIN_ID
 
-/**
- * MCERP 宿主命名空间：getInfo/getRouters 是 MCERP 主插件 ErpAuthController 端点
- * （/api/plugins/MCERP/auth/getInfo、/auth/getRouters）。
- * 附属插件自身命名空间（/api/plugins/<附属>）下没有这些端点，走默认 baseURL 会 401 → 误判未登录 → 清登录态。
- */
-const MCERP_HOST_API = '/api/plugins/MCERP'
-
-// 登录方法：直接调用主插件自带弹窗登录 POST /api/auth/login
+// 登录方法：直接调用主插件自带弹窗登录 POST <apiPrefix>/auth/login
 // 成功返回 { token, player }（SOYS 契约：data.token / data.player）
 export function login(username, password, code, uuid) {
-  return window.SoysAuth.request(soysApi() + '/auth/login', {
+  return window.SoysAuth.request(soysContext.apiPrefix + '/auth/login', {
     method: 'POST',
     json: true,
     body: JSON.stringify({ username, password, remember: true })
@@ -36,7 +36,7 @@ export function register(data) {
   return Promise.reject(new Error('注册功能由主插件/游戏内处理'))
 }
 
-// 获取用户详细信息（若依契约，MCERP 主插件端点 /auth/getInfo → /api/plugins/MCERP/auth/getInfo）
+// 获取用户详细信息（若依契约，MCERP 主插件端点 /auth/getInfo → <apiPrefix>/plugins/MCERP/auth/getInfo）
 export function getInfo() {
   return request({
     url: '/auth/getInfo',
@@ -54,9 +54,9 @@ export function unlockScreen(password) {
   })
 }
 
-// 退出方法：直接调用主插件自带 POST /api/auth/logout
+// 退出方法：直接调用主插件自带 POST <apiPrefix>/auth/logout
 export function logout() {
-  return window.SoysAuth.request(soysApi() + '/auth/logout', { method: 'POST' })
+  return window.SoysAuth.request(soysContext.apiPrefix + '/auth/logout', { method: 'POST' })
     .then(r => {
       if (r.code !== 200) throw new Error(r.msg || '退出失败')
     })

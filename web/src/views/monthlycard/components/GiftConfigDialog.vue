@@ -63,7 +63,7 @@
 <script>
 import McItemSlot from '@/components/McItemSlot/index.vue'
 import ItemEditor from '@/components/ItemEditor/index.vue'
-import { getTier, updateTier, getAdminInventory } from '@/api/monthlycard'
+import { getErpTier, saveErpTier, getErpInventory } from '@/api/monthlycard-erp'
 
 export default {
   name: 'GiftConfigDialog',
@@ -111,7 +111,7 @@ export default {
     loadItems() {
       this.working = []
       this.copyAreaVisible = false
-      getTier(this.tierKey).then(res => {
+      getErpTier(this.tierKey).then(res => {
         if (res.code === 200 && res.data) {
           const items = ((res.data.rewards || {}).items || []).map(this.cloneItem)
           this.working = items
@@ -153,7 +153,7 @@ export default {
     },
     loadInventory() {
       this.copyLoading = true
-      getAdminInventory().then(res => {
+      getErpInventory().then(res => {
         this.copyLoading = false
         if (res.code === 200 && res.data) {
           this.inventoryData = res.data
@@ -173,7 +173,7 @@ export default {
     handleSave() {
       const items = this.working.filter(Boolean)
       this.saving = true
-      updateTier(this.tierKey, { items: items }).then(res => {
+      saveErpTier(this.tierKey, { items: items }).then(res => {
         this.saving = false
         if (res.code === 200) {
           this.$message.success(res.msg || '礼品配置已保存')

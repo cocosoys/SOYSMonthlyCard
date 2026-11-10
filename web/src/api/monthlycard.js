@@ -1,9 +1,19 @@
 import request from '@/utils/request'
 
+/**
+ * 用户中心 / 管理台接口（路由 /api/plugins/SOYSMonthlyCard/admin/*）。
+ *
+ * <p>注意：axios baseURL 已经是契约 {@code apiFullPrefix}（{@code /api/plugins/SOYSMonthlyCard}），
+ * 且后端 {@code MonthlyCardController} 没有类级 {@code @RequestMapping}，方法直接挂 {@code /admin/*}。
+ * 历史版本这里多写了一层 {@code /monthlycard}，实际请求会变成
+ * {@code /api/plugins/SOYSMonthlyCard/admin/*} → 404，已按启动日志登记的
+ * 真实路由（{@code 注册 API: GET /api/plugins/SOYSMonthlyCard/admin/tiers}）修正。</p>
+ */
+
 // ========== 概览 ==========
 export function getOverview() {
   return request({
-    url: '/monthlycard/admin/overview',
+    url: '/admin/overview',
     method: 'get'
   })
 }
@@ -11,21 +21,21 @@ export function getOverview() {
 // ========== 档位管理 ==========
 export function getTiers() {
   return request({
-    url: '/monthlycard/admin/tiers',
+    url: '/admin/tiers',
     method: 'get'
   })
 }
 
 export function getTier(key) {
   return request({
-    url: '/monthlycard/admin/tiers/' + key,
+    url: '/admin/tiers/' + key,
     method: 'get'
   })
 }
 
 export function updateTier(key, data) {
   return request({
-    url: '/monthlycard/admin/tiers/' + key,
+    url: '/admin/tiers/' + key,
     method: 'put',
     data: data
   })
@@ -33,7 +43,7 @@ export function updateTier(key, data) {
 
 export function toggleTier(key) {
   return request({
-    url: '/monthlycard/admin/tiers/' + key + '/toggle',
+    url: '/admin/tiers/' + key + '/toggle',
     method: 'post'
   })
 }
@@ -41,7 +51,7 @@ export function toggleTier(key) {
 // ========== 领取/重置 ==========
 export function claimTier(key, player) {
   return request({
-    url: '/monthlycard/admin/tiers/' + key + '/claim',
+    url: '/admin/tiers/' + key + '/claim',
     method: 'post',
     data: { player: player }
   })
@@ -49,7 +59,7 @@ export function claimTier(key, player) {
 
 export function resetTier(key, player) {
   return request({
-    url: '/monthlycard/admin/tiers/' + key + '/reset',
+    url: '/admin/tiers/' + key + '/reset',
     method: 'post',
     data: { player: player }
   })
@@ -58,7 +68,7 @@ export function resetTier(key, player) {
 // ========== 领取记录 ==========
 export function getTierRecords(key) {
   return request({
-    url: '/monthlycard/admin/tiers/' + key + '/records',
+    url: '/admin/tiers/' + key + '/records',
     method: 'get'
   })
 }
@@ -66,7 +76,7 @@ export function getTierRecords(key) {
 // ========== 管理员背包 ==========
 export function getAdminInventory() {
   return request({
-    url: '/monthlycard/admin/inventory',
+    url: '/admin/inventory',
     method: 'get'
   })
 }
@@ -74,7 +84,7 @@ export function getAdminInventory() {
 // ========== 在线玩家 ==========
 export function getOnlinePlayers() {
   return request({
-    url: '/monthlycard/admin/players',
+    url: '/admin/players',
     method: 'get'
   })
 }
@@ -82,14 +92,14 @@ export function getOnlinePlayers() {
 // ========== 设置 ==========
 export function getSettings() {
   return request({
-    url: '/monthlycard/admin/settings',
+    url: '/admin/settings',
     method: 'get'
   })
 }
 
 export function saveSettings(data) {
   return request({
-    url: '/monthlycard/admin/settings',
+    url: '/admin/settings',
     method: 'put',
     data: data
   })
@@ -98,7 +108,7 @@ export function saveSettings(data) {
 // ========== 日志 ==========
 export function getLogs() {
   return request({
-    url: '/monthlycard/admin/logs',
+    url: '/admin/logs',
     method: 'get'
   })
 }

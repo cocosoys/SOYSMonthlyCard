@@ -18,9 +18,10 @@
         <el-card shadow="hover" style="margin-top: 20px">
           <div slot="header"><b>快捷入口</b></div>
           <div style="line-height: 2.6">
-            <el-button type="primary" size="mini" plain icon="el-icon-present" @click="go('/monthlycard/tiers')">礼包列表</el-button>
+            <el-button type="primary" size="mini" plain icon="el-icon-present" @click="go(moduleRoot + '/tier')">礼包列表</el-button>
+            <el-button type="success" size="mini" plain icon="el-icon-tickets" @click="go(moduleRoot + '/claim')">领取记录</el-button>
             <el-button type="warning" size="mini" plain icon="el-icon-setting" @click="go('/monthlycard/settings')">插件设置</el-button>
-            <el-button type="info" size="mini" plain icon="el-icon-document" @click="go('/monthlycard/logs')">审计日志</el-button>
+            <el-button type="info" size="mini" plain icon="el-icon-document" @click="go(moduleRoot + '/stat')">审计日志</el-button>
           </div>
         </el-card>
         <el-card shadow="hover" style="margin-top: 16px">
@@ -40,11 +41,13 @@
 <script>
 import { mapGetters } from 'vuex'
 import { getOverview } from '@/api/monthlycard'
+import soysContext from '@/soys/context'
 
 export default {
   name: 'Index',
   data() {
     return {
+      moduleRoot: soysContext.moduleRoot,
       overview: {}
     }
   },

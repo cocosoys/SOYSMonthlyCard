@@ -19,4 +19,7 @@ public interface McClaimService {
 
     /** 本月已领取排行榜（前 N 名文本行）。 */
     AjaxResult top(Integer limit);
+
+    /** 在线玩家列表（代领/重置时的下拉选项）。 */
+    AjaxResult players();
 }

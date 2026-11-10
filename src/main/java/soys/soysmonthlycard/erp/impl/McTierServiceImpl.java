@@ -3,17 +3,21 @@ package soys.soysmonthlycard.erp.impl;
 import com.github.cocosoys.mc.soyshttpovermc.util.AjaxResult;
 import com.github.cocosoys.mc.soyshttpovermc.util.PageUtils;
 import com.github.cocosoys.mc.soyshttpovermc.util.TableDataInfo;
+import com.github.cocosoys.mc.soyshttpovermc.web.ApiRequestContext;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import soys.soysmonthlycard.SOYSMonthlyCard;
 import soys.soysmonthlycard.erp.entity.vo.McTierSaveVO;
 import soys.soysmonthlycard.erp.service.McTierService;
 import soys.soysmonthlycard.erp.util.McRewards;
+import soys.soysmonthlycard.spring.entity.vo.InventoryVO;
 import soys.soysmonthlycard.spring.entity.vo.RewardsVO;
 import soys.soysmonthlycard.spring.entity.vo.TierDetailVO;
 import soys.soysmonthlycard.spring.entity.vo.TierListRowVO;
 import soys.soysmonthlycard.spring.entity.vo.TierToggleVO;
 import soys.soysmonthlycard.web.ItemSerializer;
+import soys.soysmonthlycard.web.Sync;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -144,6 +148,28 @@ public class McTierServiceImpl implements McTierService {
         TierToggleVO vo = new TierToggleVO();
         vo.setEnabled(now);
         return AjaxResult.success((now ? "已启用档位 " : "已禁用档位 ") + tierKey, vo);
+    }
+
+    @Override
+    public AjaxResult summary() {
+        return new McStatServiceImpl(plugin).overview();
+    }
+
+    @Override
+    public AjaxResult operatorInventory(ApiRequestContext ctx) {
+        Player operator = ctx.getSyncPlayer();
+        if (operator == null) {
+            return AjaxResult.error("当前操作者不在游戏内，无法读取背包；请上线后重试");
+        }
+        List<Map<String, Object>> items = Sync.run(plugin,
+                () -> ItemSerializer.serializeAll(operator.getInventory().getContents()));
+        List<Map<String, Object>> storage = Sync.run(plugin,
+                () -> ItemSerializer.serializeAll(operator.getInventory().getStorageContents()));
+        InventoryVO vo = new InventoryVO();
+        vo.setOperator(operator.getName());
+        vo.setItems(items);
+        vo.setStorage(storage);
+        return AjaxResult.success(vo);
     }
 
     /** 仅消息的成功响应（{@code msg} 携带提示，{@code data} 留空）。 */

@@ -29,7 +29,7 @@
 
 <script>
 import PlayerSelect from '@/components/PlayerSelect/index.vue'
-import { claimTier, resetTier } from '@/api/monthlycard'
+import { claimFor, resetFor } from '@/api/monthlycard-erp'
 
 export default {
   name: 'PlayerActionDialog',
@@ -76,7 +76,7 @@ export default {
         return
       }
       this.submitting = true
-      const action = this.mode === 'claim' ? claimTier : resetTier
+      const action = this.mode === 'claim' ? claimFor : resetFor
       action(this.tierKey, this.playerName).then(res => {
         this.submitting = false
         if (res.code === 200) {

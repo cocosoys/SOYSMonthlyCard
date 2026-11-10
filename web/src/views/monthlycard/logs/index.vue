@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import { getLogs } from '@/api/monthlycard'
+import { getErpLogs } from '@/api/monthlycard-erp'
 
 export default {
   name: 'MonthlyCardLogs',
@@ -49,7 +49,7 @@ export default {
     loadLogs() {
       this.loading = true
       this.lines = []
-      getLogs().then(res => {
+      getErpLogs().then(res => {
         this.loading = false
         if (res.code === 200 && res.data) {
           this.logEnabled = res.data.enabled || false

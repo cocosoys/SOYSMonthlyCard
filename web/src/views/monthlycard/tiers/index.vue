@@ -109,7 +109,7 @@
 </template>
 
 <script>
-import { getOverview, getTiers, toggleTier } from '@/api/monthlycard'
+import { getErpSummary, getErpTiers, toggleErpTier } from '@/api/monthlycard-erp'
 import PlayerActionDialog from '../components/PlayerActionDialog.vue'
 import GiftConfigDialog from '../components/GiftConfigDialog.vue'
 import TierConfigDialog from '../components/TierConfigDialog.vue'
@@ -138,13 +138,13 @@ export default {
   methods: {
     loadData() {
       this.loading = true
-      getOverview().then(res => {
+      getErpSummary().then(res => {
         if (res.code === 200) this.overview = res.data || {}
       }).catch(() => {})
-      getTiers().then(res => {
+      getErpTiers().then(res => {
         this.loading = false
         if (res.code === 200) {
-          this.tiers = res.data || []
+          this.tiers = res.rows || []
         } else {
           this.$message.error(res.msg || '加载档位列表失败')
         }
@@ -185,7 +185,7 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        toggleTier(row.key).then(res => {
+        toggleErpTier(row.key).then(res => {
           if (res.code === 200) {
             this.$message.success(res.msg || '状态已切换')
             this.loadData()

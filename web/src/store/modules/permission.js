@@ -1,14 +1,22 @@
 /**
- * permission store：路由生成与过滤。
- * <p>wujie 模式下跳过 GenerateRoutes（主应用统一鉴权），
- * 仅做本地静态路由映射；隐藏 MCERP 自带的系统管理目录。
+ * permission store：侧边栏 / 顶部栏 / 面包屑的菜单数据源。
+ *
+ * 方案 X：业务路由仍在 router/index.js 静态注册（保证 wujie 嵌入模式下不 404），
+ * 但菜单的层级 / 标题 / 图标 / 顺序 / 可见性 / 权限全部以后端
+ * MCERP GET /auth/getRouters 合成的 RouterVO 树为准，客户端按 moduleRoot 裁剪。
+ * 前端只保留一张纯 path → component 绑定表（router/index.js 的 moduleRoutes），
+ * 不再有任何展示元数据，杜绝手工对齐字段的回归。
+ *
+ * 四个槽必须全部由同一棵后端树填充：
+ *  - Settings/index.vue 的 navType watcher 带 immediate:true，挂载即把 sidebarRouters
+ *    换成 defaultRoutes → 只改一个槽会被立即打回静态表；
+ *  - TopNav/index.vue 切换顶部菜单时也会覆盖 sidebarRouters；
+ *  - Breadcrumb/index.vue 与 HeaderSearch/index.vue 消费 defaultRoutes。
+ * 每个槽各调一次 buildMenuTree 生成独立对象树，避免 TopNav 原地改 path 污染其他槽。
  */
-import auth from '@/plugins/auth'
-import router, { constantRoutes, dynamicRoutes } from '@/router'
+import { constantRoutes } from '@/router'
 import { getRouters } from '@/api/menu'
-import Layout from '@/layout/index'
-import ParentView from '@/components/ParentView'
-import InnerLink from '@/layout/components/InnerLink'
+import { pickModuleTree, buildMenuTree } from '@/router/menuAdapter'
 
 const permission = {
   state: {
@@ -31,113 +39,41 @@ const permission = {
     },
     SET_SIDEBAR_ROUTERS: (state, routes) => {
       state.sidebarRouters = routes
-    },
+    }
   },
   actions: {
     // 生成路由
     GenerateRoutes({ commit }) {
-      return new Promise(resolve => {
-        // 向后端请求路由数据
-        getRouters().then(res => {
-          const sdata = JSON.parse(JSON.stringify(res.data))
-          const rdata = JSON.parse(JSON.stringify(res.data))
-          const sidebarRoutes = filterAsyncRouter(sdata)
-          const rewriteRoutes = filterAsyncRouter(rdata, false, true)
-          const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
-          rewriteRoutes.push({ path: '*', redirect: '/404', hidden: true })
-          router.addRoutes(asyncRoutes)
-          router.addRoutes(rewriteRoutes)
-          commit('SET_ROUTES', rewriteRoutes)
-          commit('SET_SIDEBAR_ROUTERS', constantRoutes.concat(sidebarRoutes))
-          commit('SET_DEFAULT_ROUTES', sidebarRoutes)
-          commit('SET_TOPBAR_ROUTES', sidebarRoutes)
-          resolve(rewriteRoutes)
-        })
+      // 决策①：权限不足 / 请求失败时允许空侧边栏（只保留 constantRoutes 的首页项），
+      // 但仍必须 resolve，否则 permission.js 守卫的 next() 永远不会被调用，页面卡在 NProgress。
+      const empty = () => {
+        commit('SET_ROUTES', [])
+        commit('SET_SIDEBAR_ROUTERS', constantRoutes.slice())
+        commit('SET_DEFAULT_ROUTES', [])
+        commit('SET_TOPBAR_ROUTES', [])
+      }
+
+      return getRouters().then(res => {
+        const moduleTree = pickModuleTree(res && res.data)
+        if (!moduleTree) {
+          // 后端 MenuRouteServiceImpl 在模块级权限未通过时不下发整个模块 → 置空侧边栏
+          empty()
+          return []
+        }
+        // 四个槽各持一棵独立树；SET_DEFAULT_ROUTES 内部会 concat constantRoutes；
+        // 这里 SET_SIDEBAR_ROUTERS 需手动 concat 以与 defaultRoutes 保持结构一致。
+        commit('SET_ROUTES', buildMenuTree([moduleTree]))
+        commit('SET_SIDEBAR_ROUTERS', constantRoutes.concat(buildMenuTree([moduleTree])))
+        commit('SET_DEFAULT_ROUTES', buildMenuTree([moduleTree]))
+        commit('SET_TOPBAR_ROUTES', buildMenuTree([moduleTree]))
+        return []
+      }).catch(err => {
+        // 禁止静默兜底：显式告警，让用户能从控制台看到真实原因。
+        console.error('[SOYS ERP] 后端菜单读取 / 适配失败，侧边栏置空：', err)
+        empty()
+        return []
       })
     }
-  }
-}
-
-// 遍历后台传来的路由字符串，转换为组件对象
-// isNested: 是否在 Layout 内部嵌套（顶层路由用 Layout，嵌套 dir 用 ParentView，避免两层 Layout 重复渲染侧边栏）
-function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false, isNested = false) {
-  return asyncRouterMap.filter(route => {
-    // 隐藏"系统管理"目录（MCERP 自带），不出现在子应用侧边栏
-    if (route.name === 'System' || (route.path && route.path.startsWith('/system'))) {
-      route.hidden = true
-    }
-    if (type && route.children) {
-      route.children = filterChildren(route.children)
-    }
-    if (route.component) {
-      // Layout ParentView 组件特殊处理：嵌套路由里的 Layout 降级为 ParentView
-      if (route.component === 'Layout') {
-        route.component = isNested ? ParentView : Layout
-      } else if (route.component === 'ParentView') {
-        route.component = ParentView
-      } else if (route.component === 'InnerLink') {
-        route.component = InnerLink
-      } else {
-        route.component = loadView(route.component)
-      }
-    }
-    if (route.children != null && route.children && route.children.length) {
-      route.children = filterAsyncRouter(route.children, route, type, true)
-    } else {
-      delete route['children']
-      delete route['redirect']
-    }
-    return true
-  })
-}
-
-function filterChildren(childrenMap, lastRouter = false) {
-  var children = []
-  childrenMap.forEach(el => {
-    el.path = lastRouter ? lastRouter.path + '/' + el.path : el.path
-    if (el.children && el.children.length && el.component === 'ParentView') {
-      children = children.concat(filterChildren(el.children, el))
-    } else {
-      children.push(el)
-    }
-  })
-  return children
-}
-
-// 动态路由遍历，验证是否具备权限
-export function filterDynamicRoutes(routes) {
-  const res = []
-  routes.forEach(route => {
-    if (route.permissions) {
-      if (auth.hasPermiOr(route.permissions)) {
-        res.push(route)
-      }
-    } else if (route.roles) {
-      if (auth.hasRoleOr(route.roles)) {
-        res.push(route)
-      }
-    }
-  })
-  return res
-}
-
-export const loadView = (view) => {
-  // wujie: 前缀：后端 menus() 的 component 是完整 URL（/web/plugins/&lt;id&gt;/erp/xxx），
-  // 给 MCERP 主应用 wujie 容器加载用；子应用自己访问时需把它映射到本地 views 组件
-  if (typeof view === 'string' && view.startsWith('wujie:')) {
-    const url = view.slice(6)
-    // 提取 /erp/... 之后的子路径：/web/plugins/SOYSHTTPOverMC-ERP/erp/settings/config → erp/settings/config
-    const m = url.match(/\/soyshttpovermcerp\/(.+)$/)
-    if (m) {
-      let sub = m[1]
-      view = 'soyshttpovermcerp/' + sub
-    }
-  }
-  if (process.env.NODE_ENV === 'development') {
-    return (resolve) => require([`@/views/${view}`], resolve)
-  } else {
-    // 使用 import 实现生产环境的路由懒加载
-    return () => import(`@/views/${view}`)
   }
 }
 

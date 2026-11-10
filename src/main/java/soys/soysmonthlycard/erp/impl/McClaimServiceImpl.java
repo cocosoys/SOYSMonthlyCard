@@ -11,6 +11,7 @@ import soys.soysmonthlycard.erp.entity.vo.McClaimRowVO;
 import soys.soysmonthlycard.erp.entity.vo.McTopRowVO;
 import soys.soysmonthlycard.erp.service.McClaimService;
 import soys.soysmonthlycard.erp.util.McRewards;
+import soys.soysmonthlycard.spring.entity.vo.PlayerListVO;
 import soys.soysmonthlycard.storage.ClaimRecord;
 import soys.soysmonthlycard.web.Sync;
 
@@ -143,6 +144,19 @@ public class McClaimServiceImpl implements McClaimService {
             rows.add(row);
         }
         return AjaxResult.success(rows);
+    }
+
+    @Override
+    public AjaxResult players() {
+        List<PlayerListVO> out = new ArrayList<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            PlayerListVO vo = new PlayerListVO();
+            vo.setName(p.getName());
+            vo.setUuid(p.getUniqueId().toString());
+            vo.setOp(p.isOp());
+            out.add(vo);
+        }
+        return AjaxResult.success(out);
     }
 
     // ===== 内部工具 =====

@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import { getTierRecords } from '@/api/monthlycard'
+import { getClaimList } from '@/api/monthlycard-erp'
 
 export default {
   name: 'RecordsDialog',
@@ -64,11 +64,11 @@ export default {
       this.loading = true
       this.records = []
       this.total = 0
-      getTierRecords(this.tierKey).then(res => {
+      getClaimList({ pageNum: 1, pageSize: 500, tierKey: this.tierKey }).then(res => {
         this.loading = false
-        if (res.code === 200 && res.data) {
-          this.records = res.data.records || []
-          this.total = res.data.total || this.records.length
+        if (res.code === 200) {
+          this.records = res.rows || []
+          this.total = res.total || this.records.length
         }
       }).catch(() => {
         this.loading = false

@@ -22,7 +22,7 @@
 </template>
 
 <script>
-import { getOnlinePlayers } from '@/api/monthlycard'
+import { getErpOnlinePlayers } from '@/api/monthlycard-erp'
 
 export default {
   name: 'PlayerSelect',
@@ -50,7 +50,7 @@ export default {
       }
     },
     loadPlayers() {
-      getOnlinePlayers().then(res => {
+      getErpOnlinePlayers().then(res => {
         if (res.code === 200) {
           this.players = res.data || []
           this.loaded = true

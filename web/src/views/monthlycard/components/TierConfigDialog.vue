@@ -45,7 +45,7 @@
 </template>
 
 <script>
-import { getTier, updateTier } from '@/api/monthlycard'
+import { getErpTier, saveErpTier } from '@/api/monthlycard-erp'
 
 export default {
   name: 'TierConfigDialog',
@@ -75,7 +75,7 @@ export default {
   methods: {
     loadConfig() {
       this.loading = true
-      getTier(this.tierKey).then(res => {
+      getErpTier(this.tierKey).then(res => {
         this.loading = false
         if (res.code === 200 && res.data) {
           const d = res.data
@@ -95,7 +95,7 @@ export default {
     handleSave() {
       const commands = this.commandsText.split('\n').map(s => s.trim()).filter(Boolean)
       this.saving = true
-      updateTier(this.tierKey, {
+      saveErpTier(this.tierKey, {
         permission: this.form.permission,
         enabled: this.form.enabled,
         money: this.form.money,

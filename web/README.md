@@ -106,7 +106,7 @@ npm run preview
 
 
 ```
-MCERP-Vue2-example/
+web/
 
 ├── bin/                          # 常用脚本
 

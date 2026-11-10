@@ -11,6 +11,7 @@ import com.github.cocosoys.mc.soyshttpovermc.annotations.RequestMapping;
 import com.github.cocosoys.mc.soyshttpovermc.annotations.RequestParam;
 import com.github.cocosoys.mc.soyshttpovermc.util.AjaxResult;
 import com.github.cocosoys.mc.soyshttpovermc.util.TableDataInfo;
+import com.github.cocosoys.mc.soyshttpovermc.web.ApiRequestContext;
 import soys.soysmonthlycard.SOYSMonthlyCard;
 import soys.soysmonthlycard.erp.entity.vo.McTierSaveVO;
 import soys.soysmonthlycard.erp.impl.McTierServiceImpl;
@@ -39,6 +40,20 @@ public class McTierController {
                              @RequestParam(name = "pageSize", required = false) Integer pageSize,
                              @RequestParam(name = "keyword", required = false) String keyword) {
         return service.list(pageNum, pageSize, keyword);
+    }
+
+    @ApiName("档位页概览")
+    @ApiPermission("mcerp:monthlycard:tier:list")
+    @GetMapping("/summary")
+    public AjaxResult summary() {
+        return service.summary();
+    }
+
+    @ApiName("读取操作者背包")
+    @ApiPermission("mcerp:monthlycard:tier:edit")
+    @GetMapping("/inventory")
+    public AjaxResult inventory(ApiRequestContext ctx) {
+        return service.operatorInventory(ctx);
     }
 
     @ApiName("档位详情")

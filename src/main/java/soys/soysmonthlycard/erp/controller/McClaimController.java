@@ -62,4 +62,11 @@ public class McClaimController {
     public AjaxResult top(@RequestParam(name = "limit", required = false) Integer limit) {
         return service.top(limit);
     }
+
+    @ApiName("在线玩家列表")
+    @ApiPermission("mcerp:monthlycard:claim:list")
+    @GetMapping("/players")
+    public AjaxResult players() {
+        return service.players();
+    }
 }

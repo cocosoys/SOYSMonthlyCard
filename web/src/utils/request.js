@@ -77,8 +77,8 @@ service.interceptors.request.use(config => {
 service.interceptors.response.use(res => {
   // 未设置状态码则默认成功状态
   const code = res.data.code || 200
-  // 获取错误信息
-  const msg = errorCode[code] || res.data.msg || errorCode['default']
+  // 获取错误信息（优先展示后端的具体原因，例如缺少哪个权限）
+  const msg = res.data.msg || errorCode[code] || errorCode['default']
   // 二进制数据则直接返回
   if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer') {
     return res.data

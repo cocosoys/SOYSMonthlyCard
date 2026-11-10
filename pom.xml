@@ -49,6 +49,8 @@
                   </excludes>
                 </filter>
               </filters>
+              <!-- 避免每次 package 在仓库根目录生成 dependency-reduced-pom.xml -->
+              <createDependencyReducedPom>false</createDependencyReducedPom>
             </configuration>
           </execution>
         </executions>
