@@ -1,103 +1,107 @@
 <template>
   <div class="app-container">
-    <!-- 统计卡片 -->
-    <el-row :gutter="16" class="stat-row">
-      <el-col :xs="12" :sm="6">
-        <div class="stat-card stat-cyan">
-          <div class="stat-lab">在线玩家</div>
-          <div class="stat-num">{{ overview.onlinePlayers || 0 }} <small>人</small></div>
-        </div>
-      </el-col>
-      <el-col :xs="12" :sm="6">
-        <div class="stat-card stat-blue">
-          <div class="stat-lab">记录玩家</div>
-          <div class="stat-num">{{ overview.recordedPlayers || 0 }} <small>人</small></div>
-        </div>
-      </el-col>
-      <el-col :xs="12" :sm="6">
-        <div class="stat-card stat-gold">
-          <div class="stat-lab">本月领取</div>
-          <div class="stat-num">{{ overview.claimedThisMonth || 0 }} <small>次</small></div>
-        </div>
-      </el-col>
-      <el-col :xs="12" :sm="6">
-        <div class="stat-card stat-green">
-          <div class="stat-lab">礼包档位</div>
-          <div class="stat-num">{{ overview.tiersCount || 0 }} <small>个 · {{ overview.currentMonth || '' }}</small></div>
-        </div>
-      </el-col>
+    <!-- 搜索栏 -->
+    <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch">
+      <el-form-item label="档位" prop="keyword">
+        <el-input
+          v-model="queryParams.keyword"
+          placeholder="档位名 / 权限节点"
+          clearable
+          size="small"
+          style="width: 220px"
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="状态" prop="enabled">
+        <el-select v-model="queryParams.enabled" placeholder="全部" clearable size="small" style="width: 120px" @change="handleQuery">
+          <el-option label="启用中" :value="true" />
+          <el-option label="已禁用" :value="false" />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+      </el-form-item>
+    </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="loadData"></right-toolbar>
     </el-row>
 
     <!-- 档位表格 -->
-    <el-card shadow="never" class="tiers-card">
-      <div slot="header" class="card-header">
-        <span>月卡礼包档位</span>
-        <el-button type="primary" icon="el-icon-refresh" size="small" @click="loadData" :loading="loading">刷新</el-button>
-      </div>
-      <el-table v-loading="loading" :data="tiers" border stripe size="small">
-        <el-table-column prop="key" label="档位" width="130">
-          <template slot-scope="scope">
-            <div class="tier-key-cell">
-              <span :class="'tier-badge tier-' + scope.row.key">{{ tierCN(scope.row.key) }}</span>
-              <span class="tier-key-en">{{ scope.row.key }}</span>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="permission" label="权限节点" min-width="180">
-          <template slot-scope="scope">
-            <span v-if="scope.row.permission" class="mono-text">{{ scope.row.permission }}</span>
-            <span v-else class="muted-text">无（所有人）</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="enabled" label="状态" width="90" align="center">
-          <template slot-scope="scope">
-            <el-tag :type="scope.row.enabled ? 'success' : 'info'" size="mini">
-              {{ scope.row.enabled ? '启用中' : '已禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="money" label="金币" width="80" align="right">
-          <template slot-scope="scope">
-            <span v-if="scope.row.money > 0">{{ scope.row.money }}</span>
-            <span v-else class="muted-text">—</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="points" label="点券" width="80" align="right">
-          <template slot-scope="scope">
-            <span v-if="scope.row.points > 0">{{ scope.row.points }}</span>
-            <span v-else class="muted-text">—</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="本月领取" width="130" align="center">
-          <template slot-scope="scope">
-            <div><b>{{ scope.row.claimedThisMonth || 0 }}</b> <span class="muted-text">人领取</span></div>
-            <div class="muted-text" style="font-size:11px;margin-top:2px;">
-              物品 {{ scope.row.itemsCount || 0 }} · 指令 {{ scope.row.commandsCount || 0 }}
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="340" align="center" fixed="right">
-          <template slot-scope="scope">
-            <div class="row-actions">
-              <el-button type="success" size="mini" icon="el-icon-present" @click="openClaim(scope.row)">领取</el-button>
-              <el-button type="danger" size="mini" icon="el-icon-refresh-left" @click="openReset(scope.row)">重置领取</el-button>
-              <el-button type="warning" size="mini" icon="el-icon-box" @click="openGiftConfig(scope.row)">礼品配置</el-button>
-              <el-button size="mini" icon="el-icon-setting" @click="openTierConfig(scope.row)">配置</el-button>
-              <el-button size="mini" icon="el-icon-document" @click="openRecords(scope.row)">领取记录</el-button>
-              <el-button
-                :type="scope.row.enabled ? 'info' : 'success'"
-                size="mini"
-                :icon="scope.row.enabled ? 'el-icon-close' : 'el-icon-check'"
-                @click="handleToggle(scope.row)"
-              >{{ scope.row.enabled ? '禁用' : '启用' }}</el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div v-if="!loading && !tiers.length" class="empty-state">
-        暂无礼包档位，请检查 rewards.yml
-      </div>
-    </el-card>
+    <el-table v-loading="loading" :data="pageRows" border stripe size="small">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column prop="key" label="档位" width="130">
+        <template slot-scope="scope">
+          <div class="tier-key-cell">
+            <span :class="'tier-badge tier-' + scope.row.key">{{ tierCN(scope.row.key) }}</span>
+            <span class="tier-key-en">{{ scope.row.key }}</span>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column prop="permission" label="权限节点" min-width="180">
+        <template slot-scope="scope">
+          <span v-if="scope.row.permission" class="mono-text">{{ scope.row.permission }}</span>
+          <span v-else class="muted-text">无（所有人）</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="enabled" label="状态" width="90" align="center">
+        <template slot-scope="scope">
+          <el-tag :type="scope.row.enabled ? 'success' : 'info'" size="mini">
+            {{ scope.row.enabled ? '启用中' : '已禁用' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="money" label="金币" width="80" align="right">
+        <template slot-scope="scope">
+          <span v-if="scope.row.money > 0">{{ scope.row.money }}</span>
+          <span v-else class="muted-text">—</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="points" label="点券" width="80" align="right">
+        <template slot-scope="scope">
+          <span v-if="scope.row.points > 0">{{ scope.row.points }}</span>
+          <span v-else class="muted-text">—</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="本月领取" width="130" align="center">
+        <template slot-scope="scope">
+          <div><b>{{ scope.row.claimedThisMonth || 0 }}</b> <span class="muted-text">人领取</span></div>
+          <div class="muted-text" style="font-size:11px;margin-top:2px;">
+            物品 {{ scope.row.itemsCount || 0 }} · 指令 {{ scope.row.commandsCount || 0 }}
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="340" align="center" fixed="right">
+        <template slot-scope="scope">
+          <div class="row-actions">
+            <el-button type="success" size="mini" icon="el-icon-present" @click="openClaim(scope.row)">领取</el-button>
+            <el-button type="danger" size="mini" icon="el-icon-refresh-left" @click="openReset(scope.row)">重置领取</el-button>
+            <el-button type="warning" size="mini" icon="el-icon-box" @click="openGiftConfig(scope.row)">礼品配置</el-button>
+            <el-button size="mini" icon="el-icon-setting" @click="openTierConfig(scope.row)">配置</el-button>
+            <el-button size="mini" icon="el-icon-document" @click="openRecords(scope.row)">领取记录</el-button>
+            <el-button
+              :type="scope.row.enabled ? 'info' : 'success'"
+              size="mini"
+              :icon="scope.row.enabled ? 'el-icon-close' : 'el-icon-check'"
+              @click="handleToggle(scope.row)"
+            >{{ scope.row.enabled ? '禁用' : '启用' }}</el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="applyFilter"
+    />
+
+    <div v-if="!loading && !pageRows.length" class="empty-state">
+      暂无礼包档位，请检查 rewards.yml
+    </div>
 
     <!-- 弹窗 -->
     <PlayerActionDialog v-model="claimVisible" :tier-key="currentTierKey" :tier-name="currentTierName" mode="claim" @success="loadData" />
@@ -109,7 +113,7 @@
 </template>
 
 <script>
-import { getErpSummary, getErpTiers, toggleErpTier } from '@/api/monthlycard-erp'
+import { getErpTiers, toggleErpTier } from '@/api/monthlycard-erp'
 import PlayerActionDialog from '../components/PlayerActionDialog.vue'
 import GiftConfigDialog from '../components/GiftConfigDialog.vue'
 import TierConfigDialog from '../components/TierConfigDialog.vue'
@@ -121,8 +125,16 @@ export default {
   data() {
     return {
       loading: false,
-      overview: {},
+      showSearch: true,
       tiers: [],
+      pageRows: [],
+      total: 0,
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        keyword: '',
+        enabled: ''
+      },
       currentTierKey: '',
       currentTierName: '',
       claimVisible: false,
@@ -138,19 +150,47 @@ export default {
   methods: {
     loadData() {
       this.loading = true
-      getErpSummary().then(res => {
-        if (res.code === 200) this.overview = res.data || {}
-      }).catch(() => {})
       getErpTiers().then(res => {
         this.loading = false
         if (res.code === 200) {
           this.tiers = res.rows || []
         } else {
           this.$message.error(res.msg || '加载档位列表失败')
+          this.tiers = []
         }
+        this.applyFilter()
       }).catch(() => {
         this.loading = false
+        this.tiers = []
+        this.applyFilter()
       })
+    },
+    /** 客户端筛选 + 分页 */
+    applyFilter() {
+      const kw = (this.queryParams.keyword || '').trim().toLowerCase()
+      const status = this.queryParams.enabled
+      let list = this.tiers
+      if (kw) {
+        list = list.filter(t =>
+          (t.key && t.key.toLowerCase().indexOf(kw) > -1) ||
+          (t.permission && t.permission.toLowerCase().indexOf(kw) > -1)
+        )
+      }
+      if (status !== '' && status !== null && status !== undefined) {
+        list = list.filter(t => !!t.enabled === status)
+      }
+      this.total = list.length
+      const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize
+      this.pageRows = list.slice(start, start + this.queryParams.pageSize)
+    },
+    handleQuery() {
+      this.queryParams.pageNum = 1
+      this.applyFilter()
+    },
+    resetQuery() {
+      this.queryParams.keyword = ''
+      this.queryParams.enabled = ''
+      this.handleQuery()
     },
     tierCN(key) {
       return { default: '基础月卡', vip: 'VIP 月卡', mvp: 'MVP 月卡' }[key] || key
@@ -200,28 +240,6 @@ export default {
 </script>
 
 <style scoped>
-.stat-row { margin-bottom: 18px; }
-.stat-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  border-left: 4px solid;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  margin-bottom: 16px;
-}
-.stat-cyan { border-left-color: #49d6ff; }
-.stat-cyan .stat-num { color: #00a8c7; }
-.stat-blue { border-left-color: #4a86f0; }
-.stat-blue .stat-num { color: #2b5cb8; }
-.stat-gold { border-left-color: #ffb627; }
-.stat-gold .stat-num { color: #c9821a; }
-.stat-green { border-left-color: #46cf7a; }
-.stat-green .stat-num { color: #2d9c56; }
-.stat-lab { font-size: 13px; color: #909399; margin-bottom: 6px; }
-.stat-num { font-size: 24px; font-weight: 700; }
-.stat-num small { font-size: 12px; font-weight: 400; color: #909399; }
-.tiers-card { border-radius: 8px; }
-.card-header { display: flex; justify-content: space-between; align-items: center; }
 .tier-key-cell { display: flex; flex-direction: column; gap: 2px; }
 .tier-badge {
   display: inline-block;

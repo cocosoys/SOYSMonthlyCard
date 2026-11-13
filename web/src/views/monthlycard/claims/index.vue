@@ -1,112 +1,86 @@
 <template>
   <div class="app-container">
-    <!-- 概览 -->
-    <el-row :gutter="16" class="stat-row">
-      <el-col :xs="24" :sm="8">
-        <div class="stat-card stat-blue">
-          <div class="stat-lab">记录总数</div>
-          <div class="stat-num">{{ total }}</div>
-          <div class="stat-hint">当前筛选范围内</div>
-        </div>
+    <!-- 搜索栏 -->
+    <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" @submit.native.prevent>
+      <el-form-item label="档位" prop="tierKey">
+        <el-select v-model="queryParams.tierKey" clearable placeholder="全部档位" size="small" style="width:160px" @change="handleQuery">
+          <el-option v-for="t in tierOptions" :key="t.key" :label="t.label" :value="t.key" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="玩家" prop="player">
+        <el-input
+          v-model="queryParams.player"
+          clearable
+          placeholder="玩家名（模糊匹配）"
+          size="small"
+          style="width:190px"
+          @keyup.enter.native="handleQuery"
+          @clear="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">查询</el-button>
+        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+      </el-form-item>
+    </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          icon="el-icon-present"
+          size="mini"
+          :disabled="!queryParams.tierKey"
+          @click="handleClaim"
+        >代玩家领取</el-button>
       </el-col>
-      <el-col :xs="24" :sm="8">
-        <div class="stat-card stat-green">
-          <div class="stat-lab">本月领取人数</div>
-          <div class="stat-num">{{ topList.length }}</div>
-          <div class="stat-hint">排行榜统计口径</div>
-        </div>
-      </el-col>
-      <el-col :xs="24" :sm="8">
-        <div class="stat-card stat-gold">
-          <div class="stat-lab">覆盖档位</div>
-          <div class="stat-num">{{ tierOptions.length }}</div>
-          <div class="stat-hint">rewards.yml 已配置档位</div>
-        </div>
-      </el-col>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="loadList"></right-toolbar>
     </el-row>
 
-    <!-- 筛选 -->
-    <el-card shadow="never" class="filter-card">
-      <el-form :inline="true" :model="queryParams" size="small" @submit.native.prevent>
-        <el-form-item label="档位">
-          <el-select v-model="queryParams.tierKey" clearable placeholder="全部档位" style="width:160px" @change="handleQuery">
-            <el-option v-for="t in tierOptions" :key="t.key" :label="t.label" :value="t.key" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="玩家">
-          <el-input
-            v-model="queryParams.player"
-            clearable
-            placeholder="玩家名（模糊匹配）"
-            style="width:190px"
-            @keyup.enter.native="handleQuery"
-            @clear="handleQuery"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="el-icon-search" @click="handleQuery">查询</el-button>
-          <el-button icon="el-icon-refresh" @click="resetQuery">重置</el-button>
-          <el-button type="success" icon="el-icon-present" :disabled="!queryParams.tierKey" @click="handleClaim">
-            代玩家领取
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
     <!-- 记录表 -->
-    <el-card shadow="never" class="table-card">
-      <div slot="header" class="card-header">
-        <span>领取记录 <span class="muted-text">共 {{ total }} 条</span></span>
-        <el-button type="primary" icon="el-icon-refresh" size="small" :loading="loading" @click="loadList">刷新</el-button>
-      </div>
+    <el-table v-loading="loading" :data="rows" border stripe size="small">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column prop="name" label="玩家" width="150">
+        <template slot-scope="scope">
+          <span class="player-name">{{ scope.row.name }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="tier" label="档位" width="150">
+        <template slot-scope="scope">
+          <span :class="'tier-badge tier-' + scope.row.tier">{{ tierCN(scope.row.tier) }}</span>
+          <span class="tier-key-en">{{ scope.row.tier }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="month" label="领取月份" width="120">
+        <template slot-scope="scope">
+          <span class="mono-text">{{ scope.row.month || '—' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="uuid" label="UUID" min-width="260">
+        <template slot-scope="scope">
+          <span class="mono-text">{{ scope.row.uuid }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="130" align="center" fixed="right">
+        <template slot-scope="scope">
+          <el-button type="danger" size="mini" icon="el-icon-refresh-left" @click="handleReset(scope.row)">
+            重置
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
 
-      <el-table v-loading="loading" :data="rows" border stripe size="small">
-        <el-table-column prop="name" label="玩家" width="150">
-          <template slot-scope="scope">
-            <span class="player-name">{{ scope.row.name }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="tier" label="档位" width="150">
-          <template slot-scope="scope">
-            <span :class="'tier-badge tier-' + scope.row.tier">{{ tierCN(scope.row.tier) }}</span>
-            <span class="tier-key-en">{{ scope.row.tier }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="month" label="领取月份" width="120">
-          <template slot-scope="scope">
-            <span class="mono-text">{{ scope.row.month || '—' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="uuid" label="UUID" min-width="260">
-          <template slot-scope="scope">
-            <span class="mono-text">{{ scope.row.uuid }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="130" align="center" fixed="right">
-          <template slot-scope="scope">
-            <el-button type="danger" size="mini" icon="el-icon-refresh-left" @click="handleReset(scope.row)">
-              重置
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="loadList"
+    />
 
-      <div v-if="!loading && !rows.length" class="empty-state">
-        暂无领取记录；玩家领取或管理员代领后会出现在这里
-      </div>
-
-      <el-pagination
-        class="pager"
-        background
-        layout="total, sizes, prev, pager, next"
-        :current-page.sync="queryParams.pageNum"
-        :page-size.sync="queryParams.pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="total"
-        @current-change="loadList"
-        @size-change="handleQuery"
-      />
-    </el-card>
+    <div v-if="!loading && !rows.length" class="empty-state">
+      暂无领取记录；玩家领取或管理员代领后会出现在这里
+    </div>
 
     <!-- 排行榜 -->
     <el-card shadow="never" class="top-card">
@@ -138,6 +112,7 @@ export default {
   data() {
     return {
       loading: false,
+      showSearch: true,
       rows: [],
       total: 0,
       topList: [],
@@ -246,27 +221,7 @@ export default {
 </script>
 
 <style scoped>
-.stat-row { margin-bottom: 16px; }
-.stat-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  border-left: 4px solid;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 16px;
-}
-.stat-blue { border-left-color: #4a86f0; }
-.stat-blue .stat-num { color: #2b5cb8; }
-.stat-green { border-left-color: #46cf7a; }
-.stat-green .stat-num { color: #2d9c56; }
-.stat-gold { border-left-color: #ffb627; }
-.stat-gold .stat-num { color: #c9821a; }
-.stat-lab { font-size: 13px; color: #909399; margin-bottom: 6px; }
-.stat-num { font-size: 24px; font-weight: 700; }
-.stat-hint { font-size: 11px; color: #c0c4cc; margin-top: 4px; }
-
-.filter-card, .table-card, .top-card { border-radius: 8px; margin-bottom: 16px; }
-.top-card { margin-bottom: 0; }
+.top-card { border-radius: 8px; margin-top: 16px; }
 .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 
 .player-name { font-weight: 600; color: #303133; }
@@ -299,6 +254,4 @@ export default {
 .rank-1 { background: #ffb627; color: #fff; }
 .rank-2 { background: #c0c4cc; color: #fff; }
 .rank-3 { background: #d98f5c; color: #fff; }
-
-.pager { margin-top: 14px; text-align: right; }
 </style>

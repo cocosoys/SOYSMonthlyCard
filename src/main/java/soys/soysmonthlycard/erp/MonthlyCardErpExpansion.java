@@ -4,6 +4,7 @@ import com.github.cocosoys.mc.mcerp.ErpMenus;
 import com.github.cocosoys.mc.mcerp.McerpExpansion;
 import soys.soysmonthlycard.SOYSMonthlyCard;
 import soys.soysmonthlycard.erp.controller.McClaimController;
+import soys.soysmonthlycard.erp.controller.McConfigController;
 import soys.soysmonthlycard.erp.controller.McStatController;
 import soys.soysmonthlycard.erp.controller.McTierController;
 
@@ -15,8 +16,10 @@ import java.util.List;
  *
  * <p>继承 {@link McerpExpansion} 后，{@code register()} 会自动完成两件事：</p>
  * <ul>
- *   <li>按 {@link #buildControllers()} 登记三个 ERP 控制器，挂
- *       {@code /api/plugins/SOYSMonthlyCard/soysmonthlycard/{tier,claim,stat}/*}；</li>
+ *   <li>按 {@link #buildControllers()} 登记四个 ERP 控制器：档位/领取/统计挂
+ *       {@code /api/plugins/SOYSMonthlyCard/soysmonthlycard/{tier,claim,stat}/*}，
+ *       「插件配置」挂 {@code /api/plugins/SOYSMonthlyCard/erp/config/*}（复用前端
+ *       {@code web/src/api/erp.js} 既有三函数与 {@code configPage} mixin 的既有约定）；</li>
  *   <li>{@link #onRegister()} 默认实现把本模块（identifier/displayName/菜单树）写入
  *       MCERP {@code ErpRegistry}，菜单与路由即时合成。</li>
  * </ul>
@@ -92,17 +95,19 @@ public final class MonthlyCardErpExpansion extends McerpExpansion {
     }
 
     /**
-     * 菜单树：档位配置 / 领取记录 / 统计与日志（三者为模块顶层子菜单）。
+     * 菜单树：档位配置 / 领取记录 / 统计与日志 / 插件配置（四者为模块顶层子菜单）。
      *
      * <p><b>不再额外套一层 {@code dir}</b>：{@code MenuRouteServiceImpl#moduleRoute} 已用
      * {@link #displayName()}（"月卡管理"）+ {@code icon()} 合成模块顶层节点，再加一层目录
-     * 会让路由多出一级 {@code /soysmonthlycarderp/soysmonthlycard/tier}。</p>
+     * 会让路由多出一级 {@code /soysmonthlycarderp/soysmonthlycard/tier}。因此「插件配置」
+     * 也用单个顶层 {@code menu}（当前仅 config.yml 一个文件），component 为
+     * {@code PAGE_ROOT + "/config"}；若后续枚举新增文件再改造成 dir + 多叶子。</p>
      *
      * <p>component 用 {@link ErpMenus#componentFullURL(String)}，写「宿主前缀 + 子应用路由」全路径：
      * {@code /web/plugins/SOYSMonthlyCard/soysmonthlycarderp/{tier,claim,stat}}。原因见类注释——
      * DSL 执行时 {@code basePrefix} 尚未注入，相对路径会被拼成裸路径并永久失效。</p>
      *
-     * <p>三段与 {@code web/src/router/index.js} 的 routeBindings 一一对应
+     * <p>四段与 {@code web/src/router/index.js} 的 routeBindings 一一对应
      * （menuId → path → 静态路由 → 视图组件）；{@code WujieLink} 会取插件名
      * {@code SOYSMonthlyCard}、子路径 {@code /soysmonthlycarderp/xxx}，通过全局 bus 推给子应用路由。
      * <b>改这里必须同步改前端绑定表</b>，否则菜单树裁剪时查不到组件会直接抛错。</p>
@@ -118,15 +123,19 @@ public final class MonthlyCardErpExpansion extends McerpExpansion {
                 .menu("claim", "领取记录", "form", McClaimController.class)
                 .componentFullURL(PAGE_ROOT + "/claim").perms("mcerp:monthlycard:claim:list")
                 .menu("stat", "统计与日志", "chart", McStatController.class)
-                .componentFullURL(PAGE_ROOT + "/stat").perms("mcerp:monthlycard:stat:view");
+                .componentFullURL(PAGE_ROOT + "/stat").perms("mcerp:monthlycard:stat:view")
+                // 插件配置：编辑的是本插件自己的 config.yml（端点 /erp/config/*，页面随 web 子应用托管）
+                .menu("config", "插件配置", "edit", McConfigController.class)
+                .componentFullURL(PAGE_ROOT + "/config").perms("mcerp:monthlycard:config:list");
     }
 
-    /** 待登记端点：三个 ERP 控制器（本类不写端点）。 */
+    /** 待登记端点：四个 ERP 控制器（本类不写端点）。 */
     @Override
     protected List<Object> buildControllers() {
         return Arrays.asList(
                 new McTierController(plugin),
                 new McClaimController(plugin),
-                new McStatController(plugin));
+                new McStatController(plugin),
+                new McConfigController(plugin));
     }
 }

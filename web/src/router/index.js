@@ -68,9 +68,14 @@ export const constantRoutes = [
     ]
   },
   {
-    // 插件自带管理台页面（用户中心口径）：礼包列表 / 领取记录 / 设置 / 日志。
-    // ERP 模块菜单另由后端 getRouters 下发（moduleRoot 下 tier / claim / stat），
+    // 插件自带管理台页面（用户中心口径）：礼包列表 / 领取记录 / 日志。
+    // ERP 模块菜单另由后端 getRouters 下发（moduleRoot 下 tier / claim / stat / config），
     // 这里标 hidden 避免侧边栏出现两套同名入口；页面本身仍可直接 URL 访问。
+    //
+    // 【配置编辑统一为单一入口】原 /monthlycard/settings 页通过 PUT /admin/settings 写
+    // plugin.getConfig()（内存），与「插件配置」菜单的 PlatformYaml.save()（磁盘全量写）
+    // 会互相覆盖。已下线该页：旧 URL 重定向到 ERP 配置页，避免双写。
+    // 视图文件 views/monthlycard/settings/index.vue 暂留作回退，不再被任何路由引用。
     path: '/monthlycard',
     component: Layout,
     hidden: true,
@@ -90,9 +95,7 @@ export const constantRoutes = [
       },
       {
         path: 'settings',
-        component: () => import('@/views/monthlycard/settings/index'),
-        name: 'MonthlyCardSettings',
-        meta: { title: '设置', icon: 'setting' }
+        redirect: moduleRoot + '/config'
       },
       {
         path: 'logs',
@@ -123,8 +126,8 @@ export const constantRoutes = [
  * 100vh 外壳。
  *
  * 与后端的对齐关系（改一处必须同步另一处）：
- *   MonthlyCardErpExpansion.menus()  menu("tier" | "claim" | "stat")
- *   → 后端 RouterVO path 为 /tier /claim /stat，本表键为 moduleRoot + 该段
+ *   MonthlyCardErpExpansion.menus()  menu("tier" | "claim" | "stat" | "config")
+ *   → 后端 RouterVO path 为 /tier /claim /stat /config，本表键为 moduleRoot + 该段
  *
  * name 只用于 vue-router 的路由身份（TagsView / keep-alive 缓存键），
  * 与菜单展示无关；后端生成的 name 不参与渲染，见 router/menuAdapter.js。
@@ -133,7 +136,9 @@ const routeBindings = {
   [moduleRoot]: { component: Layout, name: 'MonthlyCardErpRoot', redirect: moduleRoot + '/tier' },
   [moduleRoot + '/tier']: { component: () => import('@/views/monthlycard/tiers/index'), name: 'MonthlyCardErpTier' },
   [moduleRoot + '/claim']: { component: () => import('@/views/monthlycard/claims/index'), name: 'MonthlyCardErpClaim' },
-  [moduleRoot + '/stat']: { component: () => import('@/views/monthlycard/logs/index'), name: 'MonthlyCardErpStat' }
+  [moduleRoot + '/stat']: { component: () => import('@/views/monthlycard/logs/index'), name: 'MonthlyCardErpStat' },
+  // 插件配置：与 menus() 的 .menu("config") / componentFullURL(PAGE_ROOT + "/config") 对齐
+  [moduleRoot + '/config']: { component: () => import('@/views/monthlycard/config/index'), name: 'MonthlyCardErpConfig' }
 }
 
 /** 决策②：对外暴露的纯 path → component 表（供 router/menuAdapter.js 查表）。 */
