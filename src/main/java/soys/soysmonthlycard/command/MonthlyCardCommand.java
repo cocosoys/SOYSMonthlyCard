@@ -30,7 +30,7 @@ import java.util.logging.Level;
  *   top        查看本月已领取排行榜
  *   reload     重载配置与存储（需管理员）
  *   migrate    数据迁移（如 mysql2yaml / yaml2mysql / sqlite2mysql，需管理员）
- * 别名: /syk /syueka /sgiftloft（兼容旧命令名）
+ * 别名: /syk /syueka（不使用 sgiftloft：该标签归 SOYSGiftLoft 插件主命令）
  */
 public class MonthlyCardCommand implements CommandExecutor, TabCompleter {
 

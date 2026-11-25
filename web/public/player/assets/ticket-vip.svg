@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="260" viewBox="0 0 520 260">
+  <defs>
+    <linearGradient id="fV" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#330627" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#1a0512" stop-opacity="0.98"/>
+    </linearGradient>
+    <pattern id="pV" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="1.7" fill="#ff2bd6" opacity="0.17"/>
+      <circle cx="12" cy="12" r="1.7" fill="#ff2bd6" opacity="0.10"/>
+    </pattern>
+    <linearGradient id="foilV" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff2bd6" stop-opacity="0.12"/>
+      <stop offset="0.35" stop-color="#ff9ceb" stop-opacity="0.55"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.82"/>
+      <stop offset="0.65" stop-color="#ff9ceb" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ff2bd6" stop-opacity="0.12"/>
+    </linearGradient>
+    <pattern id="holesV" width="9" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="4.5" cy="11" r="3.4" fill="#0d0410" stroke="#ff2bd6" stroke-width="0.8" opacity="0.85"/>
+    </pattern>
+  </defs>
+  <rect x="5" y="5" width="510" height="250" rx="14" fill="url(#fV)" stroke="#ff2bd6" stroke-width="2"/>
+  <rect x="5" y="5" width="510" height="250" rx="14" fill="url(#pV)"/>
+  <rect x="375" y="6" width="139" height="248" fill="#ff2bd6" opacity="0.055"/>
+  <rect x="446" y="6" width="68" height="248" fill="#ff2bd6" opacity="0.09"/>
+  <line x1="375" y1="10" x2="375" y2="250" stroke="#ff2bd6" stroke-width="1.5" stroke-dasharray="5 7" opacity="0.7"/>
+  <line x1="446" y1="10" x2="446" y2="250" stroke="#ff2bd6" stroke-width="1.5" stroke-dasharray="5 7" opacity="0.7"/>
+  <rect x="370.5" y="8" width="9" height="244" fill="url(#holesV)"/>
+  <rect x="441.5" y="8" width="9" height="244" fill="url(#holesV)"/>
+  <circle cx="375" cy="5" r="10" fill="#0d0410"/>
+  <circle cx="375" cy="255" r="10" fill="#0d0410"/>
+  <circle cx="446" cy="5" r="10" fill="#0d0410"/>
+  <circle cx="446" cy="255" r="10" fill="#0d0410"/>
+  <g stroke="#ff2bd6" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.9">
+    <path d="M17 40 V17 H40"/><path d="M480 17 H503 V40"/>
+    <path d="M503 220 V243 H480"/><path d="M40 243 H17 V220"/>
+  </g>
+  <text x="26" y="34" font-size="10" letter-spacing="3" fill="#ff2bd6" opacity="0.7" font-family="monospace">MONTHLY PASS / 2026.10</text>
+  <text x="410" y="52" text-anchor="middle" font-size="9" letter-spacing="1" fill="#ff2bd6" opacity="0.7" font-family="monospace">NO. 002</text>
+  <text x="480" y="52" text-anchor="middle" font-size="9" letter-spacing="1" fill="#ff2bd6" opacity="0.7" font-family="monospace">BONUS</text>
+  <text x="410" y="170" text-anchor="middle" font-size="88" font-weight="800" fill="#ff2bd6" opacity="0.22" font-family="Arial, sans-serif">&#9672;</text>
+  <text x="480" y="150" text-anchor="middle" font-size="26" fill="#ff2bd6" opacity="0.35" font-family="Arial, sans-serif">&#9733;</text>
+  <text x="410" y="216" text-anchor="middle" font-size="10" letter-spacing="3" fill="#ff2bd6" opacity="0.6" font-family="monospace">VIP</text>
+  <rect x="6" y="243" width="508" height="11" fill="url(#foilV)"/>
+  <text x="26" y="238" font-size="9" letter-spacing="2" fill="#ff2bd6" opacity="0.5" font-family="monospace">SOYS MONTHLY CARD · DOUBLE STUB</text>
+</svg>

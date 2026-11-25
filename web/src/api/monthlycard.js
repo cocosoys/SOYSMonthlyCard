@@ -10,6 +10,24 @@ import request from '@/utils/request'
  * 真实路由（{@code 注册 API: GET /api/plugins/SOYSMonthlyCard/admin/tiers}）修正。</p>
  */
 
+// ========== 玩家侧（凭证玩家，展示自身可领礼包） ==========
+// 对应后端 @ApiPublic GET /view/tiers、/player/state（凭证由请求上下文解析）。
+// 注：public/player/claim.html 的桥接脚本用同源 fetch 直连这两个端点，
+// 此处封装供 SPA 内其它视图复用。
+export function getPlayerTiers() {
+  return request({
+    url: '/view/tiers',
+    method: 'get'
+  })
+}
+
+export function getPlayerState() {
+  return request({
+    url: '/player/state',
+    method: 'get'
+  })
+}
+
 // ========== 概览 ==========
 export function getOverview() {
   return request({
@@ -97,6 +115,9 @@ export function getSettings() {
   })
 }
 
+// @deprecated 后端 PUT /admin/settings 已下线（双写冲突）。
+// 配置写入请使用 @/api/erp 的 saveConfigFile('config', data)（ERP「插件配置」页）。
+// 仅历史 views/monthlycard/settings 页（已被路由重定向、不可达）仍引用本函数。
 export function saveSettings(data) {
   return request({
     url: '/admin/settings',

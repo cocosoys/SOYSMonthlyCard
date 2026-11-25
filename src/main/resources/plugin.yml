@@ -8,7 +8,9 @@ softdepend: [SOYSHTTPOverMC, MCERP]
 commands:
   monthlycard:
     description: 月卡礼包领取与查询
-    aliases: [syk, syueka, sgiftloft]
+    # 不使用 sgiftloft 别名：该标签是 SOYSGiftLoft 插件的主命令，先加载者占用，
+    # 月卡插件挂它会在部分启动顺序下注册失败或抢占他人命令。
+    aliases: [syk, syueka]
     usage: /monthlycard [info|top|reload|migrate]
 permissions:
   soysmonthlycard.claim:
@@ -22,4 +24,41 @@ permissions:
     default: op
   soysmonthlycard.admin:
     description: 管理权限（重载配置、数据迁移等）
+    default: op
+
+  # ===== MCERP 统一控制台「月卡管理」模块权限 =====
+  # 与源码 @ApiPermission 一一对应；ControllerPermScanner 会把这些节点投影为
+  # ERP 菜单入口与按钮级权限。default: op 保证操作员默认可见，普通玩家不下发。
+  mcerp:monthlycard:tier:list:
+    description: 月卡 ERP - 查看档位配置列表
+    default: op
+  mcerp:monthlycard:tier:query:
+    description: 月卡 ERP - 查看档位详情
+    default: op
+  mcerp:monthlycard:tier:edit:
+    description: 月卡 ERP - 新增/修改/启停档位
+    default: op
+  mcerp:monthlycard:claim:list:
+    description: 月卡 ERP - 查看领取记录与排行榜
+    default: op
+  mcerp:monthlycard:claim:grant:
+    description: 月卡 ERP - 代玩家领取
+    default: op
+  mcerp:monthlycard:claim:reset:
+    description: 月卡 ERP - 重置玩家领取记录
+    default: op
+  mcerp:monthlycard:stat:view:
+    description: 月卡 ERP - 查看统计概览
+    default: op
+  mcerp:monthlycard:stat:logs:
+    description: 月卡 ERP - 查看审计日志
+    default: op
+  mcerp:monthlycard:config:list:
+    description: 月卡 ERP - 查看插件配置菜单
+    default: op
+  mcerp:monthlycard:config:query:
+    description: 月卡 ERP - 读取插件配置文件
+    default: op
+  mcerp:monthlycard:config:edit:
+    description: 月卡 ERP - 保存插件配置文件
     default: op

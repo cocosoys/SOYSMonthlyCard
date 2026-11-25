@@ -94,6 +94,13 @@ export const constantRoutes = [
         meta: { title: '领取记录', icon: 'form' }
       },
       {
+        // 玩家领取页（v7 票券凭证，完整视觉）：iframe 承载 public/player/claim.html
+        path: 'claim',
+        component: () => import('@/views/monthlycard/player/claim/index'),
+        name: 'MonthlyCardPlayerClaim',
+        meta: { title: '玩家领取中心', icon: 'gift' }
+      },
+      {
         path: 'settings',
         redirect: moduleRoot + '/config'
       },

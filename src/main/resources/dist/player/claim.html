@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOYS 月卡 · 玩家中心（v7 票券凭证 · 验票打孔盘）</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css" />
+<style>
+  /* ===== 时序 + 设计令牌（cyan 恒定主色；tier 仅局部点缀） ===== */
+  :root{
+    --t1:90ms; --t2:160ms; --t3:260ms; --t4:420ms;
+    --ease:cubic-bezier(.2,.85,.25,1.15);
+    --bg:#06060c; --surface:#0e1020; --surface2:#141832;
+    --text:#e8f0f7; --muted:#8b97ad; --line:rgba(0,240,255,.22);
+    --cyan:#00f0ff; --magenta:#ff2bd6; --gold:#ffd166; --ok:#37e0a0;
+    --f-display:'Orbitron','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif;
+    --f-cn:'Microsoft YaHei','PingFang SC','Noto Sans CJK SC','ZCOOL QingKe HuangYou',sans-serif;
+    --f-body:'Rajdhani','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif;
+    --f-num:'Rajdhani','Microsoft YaHei',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:15px;line-height:1.6;
+    min-height:100%;padding:22px clamp(16px,4vw,64px) 60px;position:relative;overflow-x:hidden}
+
+  /* ===== 资产化背景层（跨环境一致） ===== */
+  .bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .bg-base{background:url('assets/bg-cyber.svg') center/cover no-repeat}
+  .bg-grid{background-image:url('assets/grid.svg');background-repeat:repeat;opacity:.5;mix-blend-mode:screen}
+  .bg-scan{background-image:url('assets/scanline.svg');background-repeat:repeat;opacity:.5}
+  .grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .fx-flash{position:fixed;inset:0;z-index:9997;pointer-events:none;opacity:0}
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto}
+
+  /* ===== 非对称 Hero ===== */
+  .hero{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:26px;animation:rise var(--t4) var(--ease) both}
+  @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+  .hero-l{position:relative;padding-left:18px}
+  .hero-l::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:5px;background:linear-gradient(var(--cyan),transparent);box-shadow:0 0 14px var(--cyan)}
+  .kicker{font-family:var(--f-num);letter-spacing:5px;font-size:12px;color:var(--cyan);text-transform:uppercase;margin-bottom:6px}
+  .title{font-family:var(--f-display);font-size:clamp(2.6rem,7vw,5rem);font-weight:900;line-height:.92;letter-spacing:1px;color:#fff;
+    text-shadow:0 0 10px rgba(0,240,255,.45),0 0 34px rgba(0,240,255,.22)}
+  .title b{color:var(--cyan)}
+  .sub{color:var(--muted);font-size:14px;margin-top:10px;max-width:480px}
+  .hero-r{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+  .status-pill{border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-family:var(--f-num);font-size:13px;letter-spacing:1px;color:var(--cyan);
+    background:rgba(0,240,255,.07);box-shadow:0 0 16px rgba(0,240,255,.22)}
+  .login-btn{border:1px solid var(--line);background:transparent;color:var(--muted);padding:7px 13px;border-radius:9px;cursor:pointer;font-family:var(--f-num);font-size:12px;letter-spacing:1px;transition:.15s;min-height:36px}
+  .login-btn:hover{color:var(--magenta);border-color:var(--magenta);box-shadow:0 0 14px rgba(255,43,214,.4)}
+
+  .tabs{display:flex;gap:10px;margin:0 0 22px 18px;animation:rise var(--t4) var(--ease) .06s both}
+  .tab{border:none;background:transparent;color:var(--muted);padding:6px 4px;cursor:pointer;font-family:var(--f-num);font-size:14px;letter-spacing:2px;text-transform:uppercase;position:relative}
+  .tab::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:2px;background:var(--cyan);transition:width var(--t3) var(--ease);box-shadow:0 0 8px var(--cyan)}
+  .tab.active{color:var(--cyan)}.tab.active::after{width:100%}
+  .view{display:none}.view.active{display:block;animation:fade var(--t3) var(--ease)}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* ===== HUD 面板：烘焙四角括号（blur 不可用也恒在） ===== */
+  .hud{position:relative}
+  .hud > .cnr{position:absolute;width:26px;height:26px;background:url('assets/corner.svg') center/contain no-repeat;z-index:3;pointer-events:none}
+  .hud > .cnr.tl{left:-1px;top:-1px}
+  .hud > .cnr.tr{right:-1px;top:-1px;transform:rotate(90deg)}
+  .hud > .cnr.br{right:-1px;bottom:-1px;transform:rotate(180deg)}
+  .hud > .cnr.bl{left:-1px;bottom:-1px;transform:rotate(270deg)}
+
+  /* ===== 领取区：非对称栅格 ===== */
+  .claim-grid{display:grid;grid-template-columns:1.5fr .9fr;gap:18px;align-items:stretch}
+  .carousel-col{position:relative;min-width:0}
+  .carousel{width:100%;max-width:100%}
+
+  /* ===== 票根卡片（横向票券 + 厚度 + 三档结构差异由 SVG 提供） ===== */
+  .viewport{position:relative;height:340px;perspective:1300px;touch-action:pan-y;user-select:none;cursor:grab}
+  .viewport:active{cursor:grabbing}
+  .track{position:absolute;inset:0;transform-style:preserve-3d}
+  .slide{position:absolute;top:6px;left:50%;width:min(520px,92%);margin-left:calc(min(520px,92%) / -2);
+    transform-style:preserve-3d;transition:transform var(--t4) var(--ease),opacity var(--t3);will-change:transform,opacity}
+  .card{position:relative;aspect-ratio:520/260;display:flex;flex-direction:column;overflow:hidden;
+    padding:40px 30% 24px 28px;border-radius:14px;
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    box-shadow:6px 7px 0 rgba(0,0,0,.42),11px 13px 0 rgba(0,240,255,.05),0 22px 54px rgba(0,0,0,.6);
+    transform:rotateY(var(--ry,0deg)) scale(var(--s,1));opacity:var(--o,1);filter:blur(var(--b,0px))}
+  .card.cyan{background-image:url('assets/ticket-normal.svg')}
+  .card.magenta{background-image:url('assets/ticket-vip.svg')}
+  .card.gold{background-image:url('assets/ticket-mvp.svg')}
+  .card>*{position:relative;z-index:2}
+  .card .spot{position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:14px;opacity:0;transition:opacity .3s;
+    background:radial-gradient(220px 220px at var(--mx,50%) var(--my,50%), rgba(255,255,255,.14), transparent 60%)}
+  .card h3{font-family:var(--f-cn);font-size:25px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px;letter-spacing:2px}
+  .card h3 .dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+  .card.magenta h3 .dot{background:var(--magenta);box-shadow:0 0 12px var(--magenta)}
+  .card.gold h3 .dot{background:var(--gold);box-shadow:0 0 12px var(--gold)}
+  .perm{font-family:var(--f-num);font-size:11px;color:var(--muted);letter-spacing:2px;margin:3px 0 8px;text-transform:uppercase}
+  .label{font-family:var(--f-num);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:5px;text-transform:uppercase}
+  .rewards{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start}
+  .reward{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 7px;border-radius:5px;
+    border:1px solid var(--line);background:rgba(0,240,255,.06);color:#dceaf2}
+  .reward .ico{font-size:11px;color:var(--cyan);font-family:var(--f-num)}
+  .reward .amt{color:var(--gold);font-family:var(--f-num);font-weight:700;font-size:13px}
+  .reward.pop{animation:pop .42s var(--ease)}
+  @keyframes pop{0%{transform:translateY(8px) scale(.9);opacity:0}60%{transform:translateY(-3px) scale(1.05)}100%{transform:none;opacity:1}}
+
+  /* ===== 战术 HUD 按钮 ===== */
+  .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 18px;cursor:pointer;overflow:hidden;
+    font-family:var(--f-num);font-weight:700;font-size:14px;letter-spacing:3px;color:var(--cyan);
+    background:linear-gradient(180deg, rgba(0,240,255,.10), rgba(2,6,14,.6));
+    border:1px solid var(--cyan);
+    clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+    transition:.16s}
+  .btn::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);transform:translateX(-130%);transition:transform .42s var(--ease)}
+  .btn:hover:not(:disabled){background:var(--cyan);color:#04121a;box-shadow:0 0 22px var(--cyan)}
+  .btn:hover:not(:disabled)::before{transform:translateX(130%)}
+  .btn:active:not(:disabled){transform:translateY(1px)}
+  .btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .btn:disabled{opacity:.5;cursor:default;color:var(--muted);border-color:var(--muted);background:rgba(255,255,255,.03)}
+  .btn .spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .claim-btn{margin-top:auto;width:100%}
+  .btn.magenta{color:var(--magenta);border-color:var(--magenta);background:linear-gradient(180deg,rgba(255,43,214,.10),rgba(2,6,14,.6))}
+  .btn.magenta:hover:not(:disabled){background:var(--magenta);color:#1a0014;box-shadow:0 0 22px var(--magenta)}
+  .btn.gold{color:var(--gold);border-color:var(--gold);background:linear-gradient(180deg,rgba(255,209,102,.12),rgba(2,6,14,.6))}
+  .btn.gold:hover:not(:disabled){background:var(--gold);color:#1a1404;box-shadow:0 0 22px var(--gold)}
+
+  .nav{position:absolute;top:50%;transform:translateY(-50%);z-index:6;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:rgba(6,6,12,.7);color:var(--cyan);font-size:26px;cursor:pointer;transition:.15s}
+  .nav:hover{border-color:var(--cyan);box-shadow:0 0 18px rgba(0,240,255,.5);background:rgba(0,240,255,.12)}
+  .nav.prev{left:-8px}.nav.next{right:-8px}
+  .dots{display:flex;justify-content:center;gap:9px;margin-top:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);cursor:pointer;transition:.15s}
+  .dot.active{background:var(--cyan);box-shadow:0 0 10px var(--cyan);width:24px;border-radius:4px}
+
+  /* ===== 打印收据（右侧信息栏） ===== */
+  .receipt{position:relative;background:#0c1420;border:1px dashed rgba(0,240,255,.38);border-radius:4px;
+    margin-left:-10px;margin-top:26px;padding:22px 22px 18px;
+    box-shadow:0 16px 44px rgba(0,0,0,.55);animation:rise var(--t4) var(--ease) .12s both;
+    font-family:var(--f-num)}
+  .receipt::before,.receipt::after{content:"";position:absolute;left:0;right:0;height:6px;
+    background:radial-gradient(circle at 6px 0,transparent 6px,#0c1420 6.5px) repeat-x;background-size:12px 6px}
+  .receipt::before{top:-1px;transform:rotate(180deg)}
+  .receipt::after{bottom:-1px}
+  .rp-holes{position:absolute;top:26px;bottom:26px;width:9px;display:flex;flex-direction:column;justify-content:space-around;align-items:center;pointer-events:none}
+  .rp-holes.l{left:-5px}.rp-holes.r{right:-5px}
+  .rp-holes i{width:9px;height:9px;border-radius:50%;background:var(--bg);border:1px solid rgba(0,240,255,.28);display:block}
+  .rp-stamp{position:absolute;right:16px;top:44px;width:82px;height:82px;
+    background:url('assets/receipt-stamp.svg') center/contain no-repeat;opacity:.85;pointer-events:none}
+  .rp-head{position:relative;z-index:1}
+  .rp-brand{font-family:var(--f-display);font-size:15px;font-weight:900;letter-spacing:2px;color:var(--cyan)}
+  .rp-sub{font-size:11px;letter-spacing:2px;color:var(--muted);margin-top:2px}
+  .rp-rule{border-top:1px dashed rgba(0,240,255,.3);margin:14px 0}
+  .rp-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;padding:5px 0;color:var(--muted)}
+  .rp-row b{color:var(--text);font-size:15px;font-variant-numeric:tabular-nums;letter-spacing:.5px;white-space:nowrap}
+  .rp-row b.gold{color:var(--gold)}
+  .rp-focus{display:flex;align-items:center;gap:7px;font-family:var(--f-cn);font-size:14px;color:var(--cyan);margin-top:10px}
+  .rp-focus .dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+  .rp-total{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+  .rp-total b{font-size:26px;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:0;text-shadow:0 0 14px rgba(0,240,255,.4)}
+  .rp-total b small{font-size:14px;color:var(--muted);font-weight:500}
+  .rp-barcode{height:34px;margin-top:14px;
+    background:repeating-linear-gradient(90deg,rgba(0,240,255,.75) 0 2px,transparent 2px 4px,rgba(0,240,255,.55) 4px 5px,transparent 5px 9px,rgba(0,240,255,.75) 9px 12px,transparent 12px 14px);
+    opacity:.75}
+  .rp-foot{text-align:center;font-size:10px;letter-spacing:2px;color:var(--muted);margin-top:8px}
+
+  /* ===== 验票打孔盘 ===== */
+  .panel{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:18px;
+    box-shadow:0 14px 40px rgba(0,0,0,.45);animation:rise var(--t4) var(--ease) .18s both}
+  .panel h2{font-family:var(--f-cn);font-size:20px;font-weight:700;color:#fff;margin-bottom:4px;letter-spacing:1px}
+  .panel .hint{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .dial-layout{display:grid;grid-template-columns:auto minmax(0,1fr);gap:30px;align-items:center}
+  .dial{--R:172px;position:relative;width:420px;height:420px;flex:0 0 auto;
+    background:url('assets/punch-dial.svg') center/contain no-repeat}
+  .tick{position:absolute;left:50%;top:50%;width:22px;height:22px;padding:0;
+    transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(-1 * var(--R))) rotate(calc(-1 * var(--a)));
+    border-radius:50%;border:1.5px dashed rgba(255,255,255,.20);background:rgba(4,10,16,.9);
+    font-family:var(--f-num);font-size:10px;font-weight:700;color:var(--muted);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .16s,background .2s,box-shadow .2s}
+  .tick:hover,.tick:focus-visible{outline:none;transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(-1 * var(--R))) rotate(calc(-1 * var(--a))) scale(1.35);z-index:4;color:#fff}
+  .tick.punched{background:var(--tc);border:1.5px solid var(--tc);color:#04121a;box-shadow:0 0 12px var(--tc)}
+  .tick.today{border:1.5px solid var(--cyan);color:var(--cyan);box-shadow:0 0 14px rgba(0,240,255,.6);animation:pulse 1.6s infinite;z-index:3}
+  @keyframes pulse{0%,100%{box-shadow:0 0 8px rgba(0,240,255,.35)}50%{box-shadow:0 0 22px rgba(0,240,255,.85)}}
+  .tick.just-punched{animation:punch .55s var(--ease)}
+  @keyframes punch{0%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(-1 * var(--R))) rotate(calc(-1 * var(--a))) scale(2.1);opacity:.25}
+    55%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(-1 * var(--R))) rotate(calc(-1 * var(--a))) scale(.85)}
+    100%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(-1 * var(--R))) rotate(calc(-1 * var(--a))) scale(1);opacity:1}}
+
+  .dial-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:190px;height:190px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    background:radial-gradient(circle at 50% 40%,rgba(0,240,255,.09),rgba(4,10,18,.92) 70%);
+    box-shadow:inset 0 0 0 1px rgba(0,240,255,.18)}
+  .core-default,.core-detail{width:100%;padding:0 16px}
+  .core-detail{display:none}
+  .dial-core.detail .core-default{display:none}
+  .dial-core.detail .core-detail{display:block}
+  .dial-core.punched-flash{animation:coreFlash .7s var(--ease)}
+  @keyframes coreFlash{0%{box-shadow:inset 0 0 0 1px rgba(0,240,255,.18),0 0 0 0 rgba(0,240,255,.55)}
+    40%{box-shadow:inset 0 0 0 1px rgba(0,240,255,.6),0 0 0 18px rgba(0,240,255,0)}
+    100%{box-shadow:inset 0 0 0 1px rgba(0,240,255,.18),0 0 0 0 rgba(0,240,255,0)}}
+  .core-label{font-family:var(--f-num);font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+  .core-num{font-family:var(--f-display);font-size:56px;font-weight:900;line-height:1.05;color:#fff;
+    text-shadow:0 0 18px rgba(0,240,255,.5);font-variant-numeric:tabular-nums}
+  .core-num small{font-size:17px;color:var(--muted);font-weight:500}
+  .core-sub{font-family:var(--f-num);font-size:10px;letter-spacing:2px;color:var(--cyan);margin-top:2px}
+  .dt-icon{font-size:50px;line-height:1.1;font-weight:800;text-shadow:0 0 18px currentColor}
+  .dt-icon.dim{color:var(--muted);opacity:.4;text-shadow:none}
+  .dt-date{font-family:var(--f-display);font-size:20px;font-weight:800;color:#fff;margin-top:2px}
+  .dt-tier{font-family:var(--f-cn);font-size:13px;color:var(--cyan);margin-top:2px}
+  .dt-reward{font-family:var(--f-num);font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}
+
+  .dial-side{min-width:0}
+  .ds-title{font-family:var(--f-cn);font-size:16px;font-weight:700;color:#fff;margin-bottom:4px}
+  .ds-hint{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px}
+  .ds-legend{display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
+  .ds-legend .row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text)}
+  .ds-legend .row i{width:14px;height:14px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  .ds-legend .row small{color:var(--muted);font-family:var(--f-num);font-size:11px;letter-spacing:1px}
+  .ds-dist-title{font-family:var(--f-num);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:9px}
+  .ds-bar{display:grid;grid-template-columns:52px 1fr 30px;align-items:center;gap:9px;margin-bottom:8px;font-size:12px}
+  .ds-bar .nm{color:var(--text)}
+  .ds-bar .track2{height:8px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden}
+  .ds-bar .track2 i{display:block;height:100%;border-radius:4px}
+  .ds-bar .vv{text-align:right;font-family:var(--f-num);color:var(--muted)}
+  .ds-tip{margin-top:18px;padding:11px 13px;border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:0 8px 8px 0;
+    font-size:12px;color:var(--muted);line-height:1.6;background:rgba(0,240,255,.04)}
+
+  /* 特效层 */
+  .particle{position:fixed;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%)}
+  .beam{position:fixed;height:3px;transform-origin:left center;border-radius:2px;pointer-events:none;z-index:9998}
+
+  /* 历史 / 礼包 */
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid rgba(0,240,255,.12)}
+  th{font-family:var(--f-num);font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+  td .tag{font-family:var(--f-num);font-size:12px;padding:3px 9px;border-radius:6px;border:1px solid var(--line);color:var(--cyan);letter-spacing:1px}
+  .gifts{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:14px}
+  .gift{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:15px;display:flex;flex-direction:column;gap:6px;position:relative}
+  .gift .gi{width:42px;height:42px;border-radius:9px;background:rgba(0,240,255,.12);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--cyan);font-family:var(--f-num)}
+  .gift .gn{font-family:var(--f-cn);font-size:15px;color:#fff}.gift .gm{font-size:12px;color:var(--muted);font-family:var(--f-num)}.gift .from{font-size:12px;color:var(--gold);font-family:var(--f-num)}
+
+  /* 401 弹窗 */
+  .modal-mask{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+  .modal-mask.show{display:flex}
+  .modal{width:min(380px,90%);background:var(--surface);border:1px solid var(--magenta);border-radius:15px;padding:28px;text-align:center;position:relative;
+    box-shadow:0 0 34px rgba(255,43,214,.5);animation:modalIn .35s var(--ease)}
+  @keyframes modalIn{from{transform:translateY(22px) scale(.95);opacity:0}to{transform:none;opacity:1}}
+  .modal h3{font-family:var(--f-num);letter-spacing:2px;color:var(--magenta);margin-bottom:10px}
+  .modal p{color:var(--text);font-size:14px;margin-bottom:18px}
+  .modal .btn{background:var(--magenta);color:#1a0014;border:none;min-width:140px}
+  .modal .btn:hover{box-shadow:0 0 20px var(--magenta)}
+
+  footer{color:var(--muted);font-size:12px;line-height:1.7;border-top:1px solid var(--line);padding-top:14px;margin-top:10px;font-family:var(--f-num);letter-spacing:.5px}
+  footer code{color:var(--cyan);font-family:var(--f-num)}
+
+  /* ===== 健壮性：blur 仅作增强 ===== */
+  @supports (backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px)){
+    .panel,.gift{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);background:rgba(14,16,32,.82)}
+  }
+  @media (forced-colors:active){
+    .card,.panel,.receipt,.gift,.btn,.nav,.tick{border:1px solid CanvasText;box-shadow:none;text-shadow:none}
+    .btn{color:CanvasText;background:Canvas}
+    .tick.punched{background:CanvasText;color:Canvas}
+  }
+
+  /* ===== 移动优先 ===== */
+  @media (max-width:980px){
+    .dial-layout{grid-template-columns:minmax(0,1fr);gap:18px;justify-items:center}
+    .dial-side{width:100%}
+  }
+  @media (max-width:768px){
+    .claim-grid{grid-template-columns:minmax(0,1fr)}
+    .receipt{margin-left:0;margin-top:0;min-width:0}
+    .viewport{height:auto;min-height:0;perspective:none;overflow:hidden;width:100%;max-width:100%}
+    .track{position:relative;display:flex;width:100%;max-width:100%;height:auto;align-items:stretch}
+    .slide{position:relative;top:0;left:0;margin:0;width:100%;min-width:0;max-width:100%;flex:0 0 100%;transform:none!important;opacity:1!important}
+    /* 票券资产是 520:260 横向票根；窄屏必须维持原始比例，否则会被 100% 100% 拉成方块。
+       票面已烘焙表头(y≈34)与页脚/全息带(y≈230~254)，HTML 内容层用等比 padding 夹在两者之间。 */
+    .card{aspect-ratio:520/260;min-height:0;background-size:100% 100%;
+      padding:calc(6.5% + 10px) 30% calc(6% + 6px) 18px}
+    .card h3{font-size:19px;line-height:1.25}
+    .perm{font-size:9px;line-height:1.3;margin:2px 0 5px}
+    .label{font-size:9px;line-height:1.3;margin-bottom:3px}
+    .reward{font-size:10px;line-height:1.35;padding:1px 5px}
+    .reward .amt{font-size:11px}
+    .claim-btn{min-height:34px;font-size:12px;letter-spacing:2px}
+    .nav{width:38px;height:38px;font-size:22px;opacity:.65}
+    .title{font-size:clamp(2.2rem,11vw,3.2rem)}
+    .dial{--R:118px;width:290px;height:290px}
+    .tick{width:17px;height:17px;font-size:9px}
+    .dial-core{width:138px;height:138px}
+    .core-num{font-size:38px}.core-num small{font-size:12px}
+    .dt-icon{font-size:34px}.dt-date{font-size:15px}.dt-tier{font-size:11px}.dt-reward{font-size:10px}
+    .core-label{font-size:9px}.core-sub{font-size:9px}
+  }
+  @media (max-width:480px){
+    body{padding:16px 14px 50px}
+    .hero{gap:14px}.tabs{margin-left:0}
+    .card{padding:calc(6.5% + 10px) 30% calc(6% + 6px) 14px}
+    .card h3{font-size:17px}
+    .reward{font-size:9px;padding:1px 4px;gap:4px}
+    .reward .amt{font-size:10px}
+    .rewards{gap:4px}
+    .claim-btn{min-height:32px}
+    .receipt{padding:18px 16px 16px}
+    .rp-stamp{width:64px;height:64px;right:8px;top:40px;opacity:.7}
+    .dial{--R:104px;width:260px;height:260px}
+    .tick{width:15px;height:15px;font-size:8px}
+    .dial-core{width:122px;height:122px}
+    .core-num{font-size:32px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+    .bg-grid,.bg-scan,.grain{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="bg-layer bg-base"></div>
+<div class="bg-layer bg-grid"></div>
+<div class="bg-layer bg-scan"></div>
+<div class="grain"></div>
+<div class="fx-flash" id="fxFlash"></div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-l">
+      <div class="kicker">SOYS · MONTHLY CARD</div>
+      <div class="title">月卡<b>玩家中心</b></div>
+      <div class="sub">身份 Cocosoys · 拖拽 / 滚轮 / 箭头切换票券 · 领取瞬间能量注入验票盘并打孔</div>
+    </div>
+    <div class="hero-r">
+      <span class="status-pill">本月已验票 <b id="claimedCount" style="font-variant-numeric:tabular-nums">12</b> / 30</span>
+      <button class="login-btn" id="sim401">模拟 401</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-view="claim">领取中心</button>
+    <button class="tab" data-view="history">本月历史</button>
+    <button class="tab" data-view="giftpack">我的礼包</button>
+  </div>
+
+  <!-- 视图 1：领取中心 -->
+  <section class="view active" id="view-claim">
+    <div class="claim-grid">
+      <div class="carousel-col">
+        <div class="carousel" id="carousel">
+          <button class="nav prev" id="prev">‹</button>
+          <div class="viewport" id="viewport">
+            <div class="track" id="track">
+              <div class="slide"><div class="card cyan"><div class="spot"></div>
+                <h3><span class="dot"></span>普通月卡</h3>
+                <div class="perm">soysmonthlycard.claim</div>
+                <div class="label">每日可领</div>
+                <div class="rewards">
+                  <div class="reward"><span class="ico">¥</span>游戏币<b class="amt">1000</b></div>
+                  <div class="reward"><span class="ico">◈</span>点券<b class="amt">5</b></div>
+                </div>
+                <button class="btn claim-btn cyan" data-tier="普通月卡" data-icon="¥" data-color="cyan">领 取</button>
+              </div></div>
+              <div class="slide"><div class="card magenta"><div class="spot"></div>
+                <h3><span class="dot"></span>VIP 月卡</h3>
+                <div class="perm">soysmonthlycard.tier.vip</div>
+                <div class="label">每日可领</div>
+                <div class="rewards">
+                  <div class="reward"><span class="ico">¥</span>游戏币<b class="amt">3000</b></div>
+                  <div class="reward"><span class="ico">◈</span>点券<b class="amt">20</b></div>
+                  <div class="reward"><span class="ico">★</span>专属礼包<b class="amt">1</b></div>
+                </div>
+                <button class="btn claim-btn magenta" data-tier="VIP 月卡" data-icon="◈" data-color="magenta">领 取</button>
+              </div></div>
+              <div class="slide"><div class="card gold"><div class="spot"></div>
+                <h3><span class="dot"></span>MVP 月卡</h3>
+                <div class="perm">soysmonthlycard.tier.mvp</div>
+                <div class="label">每日可领</div>
+                <div class="rewards">
+                  <div class="reward"><span class="ico">¥</span>游戏币<b class="amt">8000</b></div>
+                  <div class="reward"><span class="ico">◈</span>点券<b class="amt">60</b></div>
+                  <div class="reward"><span class="ico">★</span>至尊礼包<b class="amt">1</b></div>
+                </div>
+                <button class="btn claim-btn gold" data-tier="MVP 月卡" data-icon="★" data-color="gold" disabled>今日已领</button>
+              </div></div>
+            </div>
+          </div>
+          <button class="nav next" id="next">›</button>
+        </div>
+        <div class="dots" id="dots"></div>
+      </div>
+
+      <div class="receipt">
+        <div class="rp-holes l"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="rp-holes r"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="rp-stamp"></div>
+        <div class="rp-head">
+          <div class="rp-brand">SOYS MONTHLY CARD</div>
+          <div class="rp-sub">MONTHLY RECEIPT / 2026.10</div>
+        </div>
+        <div class="rp-rule"></div>
+        <div class="rp-row"><span>累计游戏币</span><b id="rpMoney">24,000</b></div>
+        <div class="rp-row"><span>累计点券</span><b class="gold" id="rpPoints">340</b></div>
+        <div class="rp-row"><span>连续验票</span><b id="rpStreak">12 天</b></div>
+        <div class="rp-row"><span>专属礼包</span><b id="rpGifts">8 份</b></div>
+        <div class="rp-focus"><span class="dot"></span><span id="railTier">普通月卡</span></div>
+        <div class="rp-rule"></div>
+        <div class="rp-total"><span>已验票</span><b><span id="railCount">12</span><small> / 30</small></b></div>
+        <div class="rp-barcode"></div>
+        <div class="rp-foot">ID: SOYS-2026-10-COCOSOYS</div>
+      </div>
+    </div>
+
+    <div class="panel hud">
+      <i class="cnr tl"></i><i class="cnr tr"></i><i class="cnr br"></i><i class="cnr bl"></i>
+      <h2>本月验票打孔盘</h2>
+      <div class="hint">30 枚刻度对应本期 30 格验票周期（10.01 – 10.30）；已验票刻度按档位墨色打孔点亮，今日待验票。悬停 / 键盘聚焦任一刻度，中心钢印切换为该日详情。</div>
+      <div class="dial-layout">
+        <div class="dial" id="dial">
+          <div class="dial-core" id="dialCore">
+            <div class="core-default">
+              <div class="core-label">本月已验票</div>
+              <div class="core-num"><span id="dialCount">12</span><small>/30</small></div>
+              <div class="core-sub">PUNCH DIAL</div>
+            </div>
+            <div class="core-detail" id="coreDetail"></div>
+          </div>
+        </div>
+        <div class="dial-side">
+          <div class="ds-title">验票说明</div>
+          <div class="ds-hint">每枚刻度是一张当日票根的验讫孔。三档月卡用不同墨色区分；领取后能量沿半径注入并打孔，中心钢印随即更新。</div>
+          <div class="ds-legend">
+            <div class="row"><i style="background:#00f0ff;box-shadow:0 0 10px #00f0ff"></i>普通月卡 <small>¥ / CYAN</small></div>
+            <div class="row"><i style="background:#ff2bd6;box-shadow:0 0 10px #ff2bd6"></i>VIP 月卡 <small>◈ / MAGENTA</small></div>
+            <div class="row"><i style="background:#ffd166;box-shadow:0 0 10px #ffd166"></i>MVP 月卡 <small>★ / GOLD</small></div>
+            <div class="row"><i style="border:1.5px dashed rgba(255,255,255,.35)"></i>尚未验票 <small>EMPTY</small></div>
+          </div>
+          <div class="ds-dist-title">本月档位分布</div>
+          <div class="ds-bar"><span class="nm">普通</span><span class="track2"><i style="width:33.3%;background:#00f0ff"></i></span><span class="vv">4</span></div>
+          <div class="ds-bar"><span class="nm">VIP</span><span class="track2"><i style="width:33.3%;background:#ff2bd6"></i></span><span class="vv">4</span></div>
+          <div class="ds-bar"><span class="nm">MVP</span><span class="track2"><i style="width:33.3%;background:#ffd166"></i></span><span class="vv">4</span></div>
+          <div class="ds-tip">提示：点击 / 聚焦刻度可锁定查看当日详情；移动设备直接点按即可。全部刻度支持键盘 Tab 导航。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 视图 2：历史 -->
+  <section class="view" id="view-history">
+    <div class="panel hud">
+      <i class="cnr tl"></i><i class="cnr tr"></i><i class="cnr br"></i><i class="cnr bl"></i>
+      <h2>本月领取记录</h2>
+      <div class="hint">数据源：<code>GET /player/history</code>（后端下一轮实现；本期前端用 mock）。</div>
+      <table><thead><tr><th>日期</th><th>档位</th><th>内容</th><th>状态</th></tr></thead><tbody id="histBody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- 视图 3：礼包 -->
+  <section class="view" id="view-giftpack">
+    <div class="panel hud">
+      <i class="cnr tl"></i><i class="cnr tr"></i><i class="cnr br"></i><i class="cnr bl"></i>
+      <h2>我的礼包 / 物品库存</h2>
+      <div class="hint">数据源：<code>GET /player/giftpack</code>（玩家版 /admin/inventory）。</div>
+      <div class="gifts" id="giftGrid"></div>
+    </div>
+  </section>
+
+  <footer>
+    概念稿 v7（票券凭证 · 验票打孔盘）· 仅设计评审，未接入 <code>web/</code>；演示数据均为 mock。<br/>
+    改动：① 卡片改横向票根（齿孔撕线/主副券/全息带/厚度/序列号），三档结构差异=单联 / 双联 / 封套+封蜡；
+    ② 日历由 7 列方格改为 30 刻度验票打孔盘 + 中心详情窗（大号档位图标/日期/奖励）；③ 右侧信息栏改打印收据（4 项统计+钢印+条码+打孔边）；
+    ④ 能量注入光束终点改圆周刻度、盖戳改打孔、计数改中心钢印；⑤ 沿用 v6 全部资产化渲染 / 字体自托管 / 降级 / 移动防溢出成果；
+    ⑥ 实机校验后修正：窄屏票券维持 520:260 原始比例（不再拉成方块）、中心详情窗日期月份、计数动画的终值兜底。
+  </footer>
+</div>
+
+<div class="modal-mask" id="modalMask"><div class="modal">
+  <i class="cnr tl"></i><i class="cnr tr"></i><i class="cnr br"></i><i class="cnr bl"></i>
+  <h3>⚠ 会话已过期 (401)</h3><p>登录态失效，请重新登录后领取月卡。</p>
+  <button class="btn" id="relogin">重新登录</button>
+</div></div>
+
+<script>
+  const TIER={cyan:'#00f0ff',magenta:'#ff2bd6',gold:'#ffd166'};
+  const TIER_NAME={cyan:'普通月卡',magenta:'VIP 月卡',gold:'MVP 月卡'};
+  const TIER_REWARD={cyan:'游戏币 ×1000 / 点券 ×5',magenta:'游戏币 ×3000 / 点券 ×20 / 专属礼包 ×1',gold:'游戏币 ×8000 / 点券 ×60 / 至尊礼包 ×1'};
+  const REDUCE=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pad=n=>String(n).padStart(2,'0');
+
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active'); document.getElementById('view-'+t.dataset.view).classList.add('active');
+  }));
+
+  // ---- 轮播（桌面 coverflow / 移动 单卡 swipe） ----
+  const track=document.getElementById('track'), slides=[...track.children], dotsBox=document.getElementById('dots');
+  const N=slides.length; let idx=0;
+  slides.forEach((s,i)=>{const d=document.createElement('span');d.className='dot';d.onclick=()=>go(i);dotsBox.appendChild(d);});
+  function applyCarousel(){
+    const mobile=window.innerWidth<=768;
+    if(mobile){
+      track.style.transform=`translateX(${-idx*100}%)`;
+      slides.forEach((s,i)=>{s.style.transform='';s.style.opacity=i===idx?1:0;s.style.zIndex=10-Math.abs(i-idx);s.style.pointerEvents=i===idx?'auto':'none';});
+    }else{
+      track.style.transform='';
+      slides.forEach((s,i)=>{
+        const off=i-idx, abs=Math.min(Math.abs(off),2);
+        s.style.transform=`translateX(${off*56}%) translateZ(${-abs*160}px) rotateY(${off*-12}deg) scale(${off===0?1:0.82})`;
+        s.style.opacity=off===0?1:(abs===1?0.5:0);
+        s.style.zIndex=10-abs; s.style.pointerEvents=off===0?'auto':'none';
+      });
+    }
+    [...dotsBox.children].forEach((d,k)=>d.classList.toggle('active',k===idx));
+    document.getElementById('railTier').textContent=slides[idx].querySelector('.card h3').textContent.trim();
+  }
+  function go(i){idx=Math.max(0,Math.min(N-1,i));applyCarousel();}
+  document.getElementById('prev').onclick=()=>go(idx-1);
+  document.getElementById('next').onclick=()=>go(idx+1);
+  const vp=document.getElementById('viewport');
+  vp.addEventListener('wheel',e=>{e.preventDefault();go(idx+(e.deltaY>0?1:-1));},{passive:false});
+  let drag=false,sx=0,dx=0;
+  vp.addEventListener('pointerdown',e=>{drag=true;sx=e.clientX;dx=0;track.style.transition='none';vp.setPointerCapture(e.pointerId);});
+  vp.addEventListener('pointermove',e=>{
+    if(!drag)return; dx=e.clientX-sx;
+    track.style.transform = window.innerWidth<=768 ? `translateX(calc(${-idx*100}% + ${dx}px))` : `translateX(${dx}px)`;
+  });
+  function endDrag(){if(!drag)return;drag=false;track.style.transition='';track.style.transform='';
+    if(dx<-60&&idx<N-1)go(idx+1);else if(dx>60&&idx>0)go(idx-1);else applyCarousel();}
+  vp.addEventListener('pointerup',endDrag); vp.addEventListener('pointercancel',endDrag);
+  vp.addEventListener('pointermove',e=>{
+    const card=slides[idx].querySelector('.card'); const r=card.getBoundingClientRect();
+    card.querySelector('.spot').style.opacity=.9;
+    card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
+    card.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');
+  });
+  vp.addEventListener('pointerleave',()=>{slides.forEach(s=>s.querySelector('.spot').style.opacity=0);});
+  window.addEventListener('resize',applyCarousel);
+
+  // ---- 验票打孔盘：30 刻度 + 中心详情窗 ----
+  const Y=2026,M=10,TODAY=13,DAYS=30;
+  const plan=[['¥','cyan'],['¥','cyan'],['¥','cyan'],['¥','cyan'],['◈','magenta'],['◈','magenta'],['◈','magenta'],['◈','magenta'],['★','gold'],['★','gold'],['★','gold'],['★','gold']];
+  const claimed={};
+  for(let d=1;d<=12;d++) claimed[d]={icon:plan[d-1][0],color:plan[d-1][1]};
+
+  const dial=document.getElementById('dial'), core=document.getElementById('dialCore'), coreDetail=document.getElementById('coreDetail');
+  const ticks=[];
+  for(let d=1;d<=DAYS;d++){
+    const t=document.createElement('button');
+    t.type='button'; t.className='tick'; t.dataset.day=d;
+    t.style.setProperty('--a',((d-1)/DAYS*360)+'deg');
+    t.setAttribute('aria-label',`10月${d}日`);
+    t.textContent=d;
+    const info=claimed[d];
+    if(info){t.classList.add('punched');t.style.setProperty('--tc',TIER[info.color]);}
+    if(d===TODAY)t.classList.add('today');
+    dial.appendChild(t); ticks.push(t);
+  }
+  function showDetail(d){
+    const info=claimed[d];
+    coreDetail.innerHTML=info
+      ? `<div class="dt-icon" style="color:${TIER[info.color]}">${info.icon}</div>
+         <div class="dt-date">${pad(M)}-${pad(d)}</div>
+         <div class="dt-tier">${TIER_NAME[info.color]}</div>
+         <div class="dt-reward">${TIER_REWARD[info.color]}</div>`
+      : `<div class="dt-icon dim">·</div>
+         <div class="dt-date">${pad(M)}-${pad(d)}</div>
+         <div class="dt-tier">${d===TODAY?'今日待验票':'尚未验票'}</div>
+         <div class="dt-reward">${d===TODAY?'点击下方领取按钮':'—'}</div>`;
+    core.classList.add('detail');
+  }
+  function resetCore(){core.classList.remove('detail');}
+  ticks.forEach(t=>{
+    const d=+t.dataset.day;
+    t.addEventListener('mouseenter',()=>showDetail(d));
+    t.addEventListener('focus',()=>showDetail(d));
+    t.addEventListener('click',()=>showDetail(d));
+    t.addEventListener('mouseleave',resetCore);
+    t.addEventListener('blur',resetCore);
+  });
+
+  // ---- 特效 ----
+  function pop(x,y,color,n=12){if(REDUCE)return;
+    for(let i=0;i<n;i++){const p=document.createElement('div');p.className='particle';
+      p.style.left=x+'px';p.style.top=y+'px';p.style.background=color;p.style.boxShadow='0 0 9px '+color;document.body.appendChild(p);
+      const a=Math.random()*Math.PI*2,dist=40+Math.random()*90,ex=Math.cos(a)*dist,ey=Math.sin(a)*dist;
+      p.animate([{transform:'translate(-50%,-50%) scale(1)',opacity:1},{transform:`translate(calc(-50% + ${ex}px),calc(-50% + ${ey}px)) scale(0)`,opacity:0}],{duration:420+Math.random()*260,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>p.remove();}}
+  // 单一记忆锚点：能量注入光束（票券 → 圆周刻度）
+  function beam(x1,y1,x2,y2,color){if(REDUCE)return;
+    const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy),ang=Math.atan2(dy,dx)*180/Math.PI;
+    const b=document.createElement('div');b.className='beam';
+    b.style.left=x1+'px';b.style.top=y1+'px';b.style.width=len+'px';
+    b.style.background=`linear-gradient(90deg, ${color}, rgba(255,255,255,.95) 55%, transparent)`;
+    b.style.boxShadow=`0 0 14px ${color}`;
+    document.body.appendChild(b);
+    b.animate([{transform:`rotate(${ang}deg) scaleX(0)`,opacity:.25},{transform:`rotate(${ang}deg) scaleX(1)`,opacity:1,offset:.7},{transform:`rotate(${ang}deg) scaleX(1)`,opacity:0}],{duration:520,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>b.remove();}
+  function rollNumber(el,from,to,dur){if(REDUCE){el.textContent=to;return;}
+    const t0=performance.now();(function step(now){const t=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-t,3);
+      el.textContent=Math.round(from+(to-from)*e);if(t<1)requestAnimationFrame(step);})(t0);
+    // rAF 在后台标签页 / 无合成器环境会被节流：用定时器兜底，保证终值一定落地
+    setTimeout(()=>{el.textContent=to;},dur+80);}
+
+  // ---- 领取：能量沿半径注入 → 打孔 → 中心钢印更新 ----
+  document.querySelectorAll('.claim-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(btn.disabled)return;
+      const tier=btn.dataset.tier,icon=btn.dataset.icon,colorKey=btn.dataset.color,color=TIER[colorKey];
+      btn.disabled=true; btn.innerHTML='<span class="spin"></span>验票中…';
+      const r=btn.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+      const tick=ticks[TODAY-1], tr=tick.getBoundingClientRect();
+      const tx=tr.left+tr.width/2, ty=tr.top+tr.height/2;
+      setTimeout(()=>{
+        beam(cx,cy,tx,ty,color);            // ★ 唯一记忆锚点：票券 → 圆周刻度
+        pop(cx,cy,color,12);
+        const card=btn.closest('.card'); [...card.querySelectorAll('.reward')].forEach((rw,i)=>setTimeout(()=>rw.classList.add('pop'),i*60));
+        rollNumber(document.getElementById('claimedCount'),12,13,400);
+        rollNumber(document.getElementById('railCount'),12,13,400);
+        rollNumber(document.getElementById('dialCount'),12,13,400);
+        setTimeout(()=>{                    // 光束抵达 → 打孔
+          claimed[TODAY]={icon,color:colorKey};
+          tick.classList.remove('today');
+          tick.classList.add('punched','just-punched');
+          tick.style.setProperty('--tc',color);
+          core.classList.remove('detail');
+          core.classList.add('punched-flash');
+          setTimeout(()=>core.classList.remove('punched-flash'),700);
+        },260);
+        btn.textContent='今日已领';
+        appendHistory(tier);
+      },140);
+    });
+  });
+
+  // ---- mock 历史 / 礼包 ----
+  const hist=[['10-01','普通月卡','游戏币 ×1000 / 点券 ×5','已领'],['10-02','VIP 月卡','游戏币 ×3000 / 专属礼包 ×1','已领'],['10-03','MVP 月卡','至尊礼包 ×1','已领']];
+  function appendHistory(tier){const d=new Date();const ds=`${pad(d.getMonth()+1)}-${pad(d.getDate())}`;hist.unshift([ds,tier,'（本次领取内容）','已领']);renderHist();}
+  function renderHist(){document.getElementById('histBody').innerHTML=hist.map(r=>`<tr><td>${r[0]}</td><td><span class="tag">${r[1]}</span></td><td>${r[2]}</td><td style="color:var(--ok)">${r[3]}</td></tr>`).join('');}
+  renderHist();
+  const gifts=[['★','至尊礼包','MVP 月卡 · 每日','来源于 MVP 月卡'],['◈','点券 ×60','MVP 月卡 · 每日','来源于 MVP 月卡'],['¥','游戏币 ×8000','MVP 月卡 · 每日','来源于 MVP 月卡'],['★','专属礼包 ×1','VIP 月卡 · 每日','来源于 VIP 月卡']];
+  document.getElementById('giftGrid').innerHTML=gifts.map(g=>`<div class="gift"><div class="gi">${g[0]}</div><div class="gn">${g[1]}</div><div class="gm">${g[2]}</div><div class="from">${g[3]}</div></div>`).join('');
+
+  // ---- 401 弹窗 ----
+  const mask=document.getElementById('modalMask');
+  document.getElementById('sim401').onclick=()=>mask.classList.add('show');
+  document.getElementById('relogin').onclick=()=>mask.classList.remove('show');
+
+  applyCarousel();
+</script>
+
+<!-- ============ 真实数据桥接（v7 概念稿 → 接真实后端） ============
+     页面本体与全部视觉资产保持概念稿原样（0 视觉风险）；
+     本脚本在页面加载后用同源真实端点覆盖 mock 数据：
+       GET /api/plugins/SOYSMonthlyCard/view/tiers   → 档位卡片 + 奖励金额
+       GET /api/plugins/SOYSMonthlyCard/player/state → 本月已领状态（打孔盘 / 按钮）
+     后端无「网页在线领取」端点，领取按钮引导玩家回游戏内 /monthlycard。
+     API 不可用（未登录/无框架）时保留演示数据并在页脚标注，绝不白屏。 -->
+<script>
+(function(){
+  var API='/api/plugins/SOYSMonthlyCard';
+  var COLOR=['cyan','magenta','gold'];
+  var ICON=['¥','◈','★'];
+  function j(url){return fetch(url,{credentials:'same-origin'}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});}
+  function txt(el,v){if(el&&v!==undefined&&v!==null)el.textContent=v;}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  function applyTiers(view,state){
+    var tiers=(view&&view.tiers)||[];
+    if(!tiers.length)return false;
+    var track=document.getElementById('track');
+    if(!track)return false;
+    // 用真实档位重建票券（沿用概念稿 DOM/CSS 结构）
+    track.innerHTML=tiers.map(function(t,i){
+      var color=COLOR[i%COLOR.length],icon=ICON[i%COLOR.length];
+      var st=(state&&state.tiers&&state.tiers[t.key])||{};
+      var rewards=[];
+      if(t.money>0)rewards.push('<div class="reward"><span class="ico">¥</span>游戏币<b class="amt">'+esc(t.money)+'</b></div>');
+      if(t.points>0)rewards.push('<div class="reward"><span class="ico">◈</span>点券<b class="amt">'+esc(t.points)+'</b></div>');
+      (t.items||[]).forEach(function(it){rewards.push('<div class="reward"><span class="ico">★</span>'+esc(it.name||it.material||'物品')+'<b class="amt">×'+esc(it.amount||1)+'</b></div>');});
+      var done=!!st.claimed;
+      return '<div class="slide"><div class="card '+color+'"><div class="spot"></div>'+
+        '<h3><span class="dot"></span>'+esc(t.key)+'</h3>'+
+        '<div class="perm">soysmonthlycard · '+esc(t.key)+'</div>'+
+        '<div class="label">'+(view.claimTime?'本期可领':'未到领取日')+'</div>'+
+        '<div class="rewards">'+rewards.join('')+'</div>'+
+        '<button class="btn claim-btn '+color+'" data-tier="'+esc(t.key)+'" data-icon="'+icon+'" data-color="'+color+'"'+(done?' disabled':'')+'>'+
+        (done?'本月已领':'领 取')+'</button></div></div>';
+    }).join('');
+
+    // 重建轮播状态（原脚本的 slides 是闭包常量，需重新初始化最简交互）
+    var slides=[].slice.call(track.children), dotsBox=document.getElementById('dots');
+    if(dotsBox)dotsBox.innerHTML='';
+    var cur=0;
+    slides.forEach(function(_,i){var d=document.createElement('span');d.className='dot';d.onclick=function(){cur=i;layout();};dotsBox&&dotsBox.appendChild(d);});
+    function layout(){
+      var mobile=window.innerWidth<=768;
+      slides.forEach(function(s,i){
+        var off=i-cur,abs=Math.min(Math.abs(off),2);
+        if(mobile){s.style.transform='translateX('+(-cur*100)+'%)';s.style.opacity=i===cur?1:0;}
+        else{s.style.transform='translateX('+(off*56)+'%) rotateY('+(off*-12)+'deg) scale('+(off===0?1:0.82)+')';s.style.opacity=off===0?1:(abs===1?0.5:0);}
+        s.style.zIndex=10-abs;s.style.pointerEvents=off===0?'auto':'none';
+      });
+      [].slice.call(dotsBox.children).forEach(function(d,k){d.classList.toggle('active',k===cur);});
+      var rail=document.getElementById('railTier');if(rail&&slides[cur])rail.textContent=slides[cur].querySelector('.card h3').textContent.trim();
+    }
+    var prev=document.getElementById('prev'),next=document.getElementById('next');
+    if(prev)prev.onclick=function(){cur=Math.max(0,cur-1);layout();};
+    if(next)next.onclick=function(){cur=Math.min(slides.length-1,cur+1);layout();};
+    layout();
+
+    // 统计：本月已领档位数 / 本月天数
+    var claimedCount=Object.keys(state&&state.tiers||{}).filter(function(k){return state.tiers[k].claimed;}).length;
+    txt(document.getElementById('claimedCount'),claimedCount);
+    var rail=document.getElementById('railCount'),dial=document.getElementById('dialCount');
+    txt(rail,claimedCount);txt(dial,claimedCount);
+    var now=new Date(),dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    // 收据副标题改为真实月份
+    var rpSub=document.querySelector('.rp-sub');if(rpSub)rpSub.textContent='MONTHLY RECEIPT / '+now.getFullYear()+'.'+String(now.getMonth()+1).padStart(2,'0');
+    var foot=document.querySelector('.rp-foot');if(foot)foot.textContent='ID: SOYS-'+now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+' / '+(state&&state.name||'玩家');
+    // 提示条：本期天数口径
+    var hint=document.querySelector('#view-claim .panel.hud .hint');
+    if(hint)hint.textContent='本期 '+dim+' 格验票周期；已领取档位按档位墨色点亮。悬停 / 键盘聚焦刻度查看详情（当前数据仅到「档位」粒度，非逐日）。';
+
+    // 领取按钮：无网页在线领取端点 → 引导游戏内指令，保留光束特效
+    [].slice.call(document.querySelectorAll('.claim-btn')).forEach(function(btn){
+      btn.onclick=function(){
+        if(btn.disabled)return;
+        var r=btn.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+        var tick=document.getElementById('dial'),tr=tick.getBoundingClientRect();
+        if(typeof beam==='function')beam(cx,cy,tr.left+tr.width/2,tr.top+tr.height/2,'#00f0ff');
+        window.alert('请在游戏内输入 /monthlycard 领取（网页暂不支持直接发放奖励）。');
+      };
+    });
+    return true;
+  }
+
+  function markDemo(){
+    var f=document.querySelector('footer');
+    if(f)f.insertAdjacentHTML('beforeend','<br/><span style="color:#ffd166">当前未获取到登录态，页面展示为演示数据；登录网页用户中心后将显示真实档位与领取状态。</span>');
+    var b=document.getElementById('sim401');if(b)b.style.display='none';
+  }
+
+  // 并行拉取两个端点；任一失败都优雅降级为演示数据
+  Promise.all([j(API+'/view/tiers'),j(API+'/player/state')])
+    .then(function(res){
+      var view=res[0]&&res[0].data, state=res[1]&&res[1].data;
+      if(!applyTiers(view,state))markDemo();
+      var b=document.getElementById('sim401');if(b)b.style.display='none';
+    })
+    .catch(function(){markDemo();});
+})();
+</script>
+</body>
+</html>

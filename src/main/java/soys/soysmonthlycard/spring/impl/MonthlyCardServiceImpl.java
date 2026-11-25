@@ -2,7 +2,9 @@ package soys.soysmonthlycard.spring.impl;
 
 import com.github.cocosoys.mc.soyshttpovermc.util.JsonReader;
 import com.github.cocosoys.mc.soyshttpovermc.web.ApiRequestContext;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -123,7 +125,9 @@ public class MonthlyCardServiceImpl implements MonthlyCardService {
                     PlayerTierStateVO info = new PlayerTierStateVO();
                     boolean claimed = uuid != null && plugin.getClaimManager().hasClaimed(uuid, key);
                     String perm = tier == null ? "" : tier.getString("permission", "");
-                    boolean permitted = online == null || perm.isEmpty() || online.hasPermission(perm);
+                    // 离线玩家不能只因 online == null 就判为「可领取」：
+                    // 有权限要求时经 Vault 按名查询权限插件；无权限插件则按无权限处理（宁少勿误报）。
+                    boolean permitted = perm.isEmpty() || hasPermission(online, name, perm);
                     info.setClaimed(claimed);
                     info.setPermitted(permitted);
                     tiers.put(key, info);
@@ -360,61 +364,9 @@ public class MonthlyCardServiceImpl implements MonthlyCardService {
         return vo;
     }
 
-    @Override
-    public String saveSettings(ApiRequestContext ctx, String body) {
-        assertOp(ctx);
-        Map<String, Object> payload = JsonReader.parseObject(body);
-        try {
-            // 基础设置白名单
-            String[] allowed = {
-                    "claim-day", "auto-claim-on-join", "month-format",
-                    "offline-compensation", "debug", "audit.enabled"
-            };
-            Object settings = payload.get("settings");
-            if (settings instanceof Map) {
-                Map<?, ?> sm = (Map<?, ?>) settings;
-                for (String key : allowed) {
-                    if (sm.containsKey(key)) {
-                        plugin.getConfig().set("settings." + key, sm.get(key));
-                    }
-                }
-                if (sm.containsKey("units") && sm.get("units") instanceof Map) {
-                    Map<?, ?> units = (Map<?, ?>) sm.get("units");
-                    if (units.get("money") != null) {
-                        plugin.getConfig().set("settings.units.money", str(units.get("money")));
-                    }
-                    if (units.get("points") != null) {
-                        plugin.getConfig().set("settings.units.points", str(units.get("points")));
-                    }
-                }
-            }
-            // 存储后端开关
-            Object backends = payload.get("backends");
-            if (backends instanceof Map) {
-                for (Map.Entry<?, ?> e : ((Map<?, ?>) backends).entrySet()) {
-                    String id = str(e.getKey());
-                    if (e.getValue() instanceof Map && ((Map<?, ?>) e.getValue()).containsKey("enabled")) {
-                        Object en = ((Map<?, ?>) e.getValue()).get("enabled");
-                        plugin.getConfig().set("storage.backends." + id + ".enabled", en);
-                    }
-                }
-            }
-            // 镜像设置
-            Object mirror = payload.get("mirror");
-            if (mirror instanceof Map) {
-                Map<?, ?> mm = (Map<?, ?>) mirror;
-                for (Map.Entry<?, ?> e : mm.entrySet()) {
-                    plugin.getConfig().set("storage.mirror." + str(e.getKey()), e.getValue());
-                }
-            }
-            plugin.saveConfig();
-            plugin.getConfigManager().reload();
-            plugin.reloadAuditLogger();
-            return "设置已保存（存储后端变更需重启服务器生效）";
-        } catch (Exception e) {
-            throw new WebException(WebException.Kind.ERROR, "保存设置失败: " + e.getMessage());
-        }
-    }
+    // 说明：saveSettings 已移除，配置写入统一由 ERP「插件配置」页
+    // POST /erp/config/save（McConfigController → McConfigServiceImpl）承担，
+    // 消除「legacy 写内存 + reload」与「配置页写磁盘」两套语义互相覆盖的双写问题。
 
     // ================================================================
     //  管理侧：日志 / 背包 / 玩家
@@ -478,6 +430,31 @@ public class MonthlyCardServiceImpl implements MonthlyCardService {
     // ================================================================
     //  辅助方法（原控制器私有方法，随下沉迁入 impl）
     // ================================================================
+
+    /**
+     * 权限判定：在线玩家直接查实体；离线玩家经 Vault 权限服务按名查询。
+     *
+     * <p>1.12.2 的 OfflinePlayer 不能 hasPermission；无权限插件时按无权限处理，
+     * 与 {@code McStatServiceImpl#hasPermission} 策略一致（宁少勿误报可领取）。</p>
+     */
+    private boolean hasPermission(Player online, String playerName, String perm) {
+        if (online != null) {
+            return online.hasPermission(perm);
+        }
+        if (playerName == null || playerName.isEmpty()) {
+            return false;
+        }
+        try {
+            RegisteredServiceProvider<Permission> rsp =
+                    plugin.getServer().getServicesManager().getRegistration(Permission.class);
+            if (rsp == null || rsp.getProvider() == null) {
+                return false;
+            }
+            return rsp.getProvider().playerHas((String) null, playerName, perm);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
 
     private List<String> tierKeys() {
         ConfigurationSection tiers = plugin.getRewards().getConfigurationSection("tiers");

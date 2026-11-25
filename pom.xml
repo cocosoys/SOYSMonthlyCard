@@ -154,6 +154,20 @@
       <systemPath>${project.basedir}/../MCERP/target/MCERP-1.0-SNAPSHOT.jar</systemPath>
     </dependency>
 
+    <!-- 单元测试（易回归的纯逻辑：时间窗口 / 月份格式 / 档位权限 / 领取记录） -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.8.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>3.12.4</version>
+      <scope>test</scope>
+    </dependency>
+
     <!--
         JDBC 驱动说明：
         与 SOYSLinkTeam 保持一致，Spigot 1.12.2 服务端已内置 MySQL Connector/J 与 SQLite JDBC，

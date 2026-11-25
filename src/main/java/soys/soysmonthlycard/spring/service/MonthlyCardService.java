@@ -68,11 +68,8 @@ public interface MonthlyCardService {
 
     // ---------- 管理侧：设置 ----------
 
-    /** 读取设置。 */
+    /** 读取设置（只读；写入统一由 ERP 插件配置页 POST /erp/config/save 承担）。 */
     SettingsViewVO getSettings(ApiRequestContext ctx);
-
-    /** 保存设置。 */
-    String saveSettings(ApiRequestContext ctx, String body);
 
     // ---------- 管理侧：日志 / 背包 / 玩家 ----------
 

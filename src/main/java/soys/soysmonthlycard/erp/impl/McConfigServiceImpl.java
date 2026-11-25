@@ -8,6 +8,7 @@ import soys.soysmonthlycard.erp.entity.MonthlyCardConfigFile;
 import soys.soysmonthlycard.erp.entity.vo.McConfigFileVO;
 import soys.soysmonthlycard.erp.entity.vo.McConfigSaveVO;
 import soys.soysmonthlycard.erp.service.McConfigService;
+import soys.soysmonthlycard.erp.util.YamlCommentPreservingWriter;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -20,9 +21,10 @@ import java.util.Map;
  * <p>自包含：构造器注入 owner 实例，按 {@code plugin.getDataFolder()} 解析，
  * 不写死任何插件名、不通过 PluginManager 去查找别的插件目录。</p>
  *
- * <p>读写复用平台层：{@link PlatformYaml#load} / {@link PlatformYaml#save}（统一接管编码，
- * 低版本 UTF-8 不乱码）+ {@link ConfigUtil#toMap} / {@link ConfigUtil#toYaml}
- * （YAML ↔ Map 递归转换）。全量写回，<b>注释不保留</b>。</p>
+ * <p>读取走平台层 {@link PlatformYaml#load} + {@link ConfigUtil#toMap}（统一接管编码，
+ * 低版本 UTF-8 不乱码）；<b>写入改用 {@link YamlCommentPreservingWriter}</b> 逐键写回，
+ * <b>保留原文件注释与行内注释</b>，保存前自动生成 {@code .bak_yyyyMMdd-HHmmss} 备份。
+ * 不再使用 {@link PlatformYaml#save}/{@link ConfigUtil#toYaml} 全量序列化（那会抹掉全部注释）。</p>
  *
  * <p>所有方法以 {@code try/catch(Throwable)} 收口，异常转成 {@code AjaxResult.error(msg)}，
  * 不让堆栈穿透到 HTTP 层。</p>
@@ -78,9 +80,11 @@ public class McConfigServiceImpl implements McConfigService {
             if (data == null) {
                 return AjaxResult.error("配置内容为空");
             }
-            PlatformYaml.save(ConfigUtil.toYaml(data), file);
+            // 逐键写回：保留注释，保存前自动 .bak 备份（见 YamlCommentPreservingWriter）
+            int written = YamlCommentPreservingWriter.savePreservingComments(file, data);
             McConfigSaveVO resp = McConfigSaveVO.of(f.getFile(),
-                    "已保存。执行 /monthlycard reload 热重载生效（存储后端 / 连接串等变更需重启服务器）");
+                    "已保存 " + written + " 项（原注释已保留，自动备份为 " + f.getFile()
+                            + ".bak_<时间戳>）。执行 /monthlycard reload 热重载生效（存储后端 / 连接串等变更需重启服务器）");
             return AjaxResult.success(resp);
         } catch (Throwable t) {
             return AjaxResult.error("配置保存失败：" + t.getMessage());

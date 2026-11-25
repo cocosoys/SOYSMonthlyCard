@@ -22,7 +22,7 @@ import soys.soysmonthlycard.spring.impl.MonthlyCardServiceImpl;
  * 并把 {@link WebException} 按类型映射为对应响应。所有业务逻辑、鉴权、文件读写、
  * 存储访问与主线程调度均在 {@code soys.soysmonthlycard.spring.service.impl} 中实现。</p>
  *
- * <p>端点统一挂 {@code /api/plugins/soysmonthlycard} 前缀：</p>
+ * <p>端点统一挂 {@code /api/plugins/SOYSMonthlyCard} 前缀（大小写与插件名一致）：</p>
  *
  * <b>用户侧（凭证玩家，展示自身可领礼包）</b>
  * <ul>
@@ -193,16 +193,10 @@ public class MonthlyCardController {
         }
     }
 
-    @ApiName("保存设置")
-    @ApiPublic
-    @PutMapping("/admin/settings")
-    public AjaxResult saveSettings(ApiRequestContext ctx, @RequestBody String body) {
-        try {
-            return AjaxResult.success(service.saveSettings(ctx, body));
-        } catch (WebException e) {
-            return toResponse(e);
-        }
-    }
+    // 说明：原 PUT /admin/settings（saveSettings）已下线。
+    // 配置写入统一走 ERP「插件配置」页的 POST /erp/config/save（McConfigController），
+    // 避免「legacy 写内存 + reload」与「配置页写磁盘全量」两套语义互相覆盖。
+    // GET /admin/settings 保留为只读，供旧管理台读取当前设置。
 
     // ================================================================
     //  管理侧：日志 / 背包 / 玩家

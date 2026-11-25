@@ -60,7 +60,8 @@ storage:
       table-prefix: "mc_smc_"
 
     # MySQL：启用后自动成为主存储，可跨服共享月卡领取数据
-    # 仅需 url + 账号密码，驱动已随插件打包
+    # 仅需 url + 账号密码；JDBC 驱动由服务端提供（pom 中为 provided，不随插件打包），
+    # 切换后端前请确认服务端已内置 mysql-connector / sqlite-jdbc，否则会 ClassNotFound
     mysql:
       enabled: false
       # 完整 JDBC 连接串，例如：
